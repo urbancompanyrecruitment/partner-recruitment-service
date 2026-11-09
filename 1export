@@ -1,0 +1,42 @@
+fatal: destination path '/Users/msaggu/beacon' already exists and is not an empty directory.
+fatal: destination path '/Users/msaggu/beacon' already exists and is not an empty directory.
+npmnpm  ERR! code ENOENT
+ERR! code ENOENT
+npmnpm ERR!  ERR! syscall open
+npmsyscall open
+npm ERR! path /Users/msaggu/package.json
+ ERR! path /Users/msaggu/package.json
+npmnpm ERR!  ERR! errno -2
+errno -2
+npm npm ERR! enoent ENOENT: no such file or directory, open '/Users/msaggu/package.json'
+npm ERR! ERR! enoent ENOENT: no such file or directory, open '/Users/msaggu/package.json'
+npm ERR! enoent This is related to npm not being able to find a file.
+npm ERR! enoentenoent This is related to npm not being able to find a file.
+npm ERR! enoent 
+ 
+
+
+npmnpm ERR! A complete log of this run can be found in:
+npm ERR! ERR! A complete log of this run can be found in:
+npm ERR!     /Users/msaggu/.npm/_logs/2026-11-09T04_52_41_271Z-debug.log
+     /Users/msaggu/.npm/_logs/2026-11-09T04_52_41_271Z-debug.log
+npmnpm ERR! ERR! code ENOENT
+ code ENOENT
+npm npm ERR! syscallERR! syscall open
+npm ERR!  open
+npm ERR! path /Users/msaggu/package.json
+path /Users/msaggu/package.json
+npm npm ERR! errno -2
+ERR! errno -2
+npm npm ERR! enoent ENOENT: no such file or directory, open '/Users/msaggu/package.json'
+npmERR! enoent ENOENT: no such file or directory, open '/Users/msaggu/package.json'
+npm ERR! enoent This is related to npm not being able to find a file.
+npm ERR!  ERR! enoent This is related to npm not being able to find a file.
+npm ERR! enoent 
+enoent 
+
+
+npmnpm ERR! A complete log of this run can be found in:
+npm ERR! ERR! A complete log of this run can be found in:
+npm ERR!     /Users/msaggu/.npm/_logs/2026-11-09T04_52_41_997Z-debug.log
+     /Users/msaggu/.npm/_logs/2026-11-09T04_52_41_997Z-debug.log
