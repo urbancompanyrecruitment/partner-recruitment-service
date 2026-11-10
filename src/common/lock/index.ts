@@ -3,10 +3,11 @@ import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { pool } from '../db/index.js';
 import { AppError, ErrorCode } from '../errors/index.js';
 import { logger } from '../logger.js';
-import { LOCK_ACQUIRE_TIMEOUT_SECONDS, LOCK_KEY_PREFIX, MAX_LOCK_NAME_LENGTH, PHONE_KEY_CHECKSUM_LENGTH } from './constant.js';
+import { CHECKSUM_KEY_LENGTH, LOCK_ACQUIRE_TIMEOUT_SECONDS, LOCK_KEY_PREFIX, MAX_LOCK_NAME_LENGTH } from './constant.js';
 
 export const lockKey = {
-  phone: (checksum: string) => `${LOCK_KEY_PREFIX.phone}:${checksum.slice(0, PHONE_KEY_CHECKSUM_LENGTH)}`,
+  phone: (checksum: string) => `${LOCK_KEY_PREFIX.phone}:${checksum.slice(0, CHECKSUM_KEY_LENGTH)}`,
+  email: (checksum: string) => `${LOCK_KEY_PREFIX.email}:${checksum.slice(0, CHECKSUM_KEY_LENGTH)}`,
   slot: (slotId: string) => `${LOCK_KEY_PREFIX.slot}:${slotId}`,
   partner: (partnerId: string) => `${LOCK_KEY_PREFIX.partner}:${partnerId}`,
   recruiter: (recruiterId: string) => `${LOCK_KEY_PREFIX.recruiter}:${recruiterId}`,

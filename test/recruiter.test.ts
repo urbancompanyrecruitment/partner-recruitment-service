@@ -67,6 +67,7 @@ describe('recruiter locks and placements', () => {
     expect(available.json()).toHaveLength(1);
     expect(available.json()[0]).toMatchObject({ id: partnerId, verified: true, hasSingaporePhone: true });
     expect(available.json()[0].primaryPhone).toBeUndefined();
+    expect(available.json()[0].email).toBeUndefined();
     expect(JSON.stringify(available.json())).not.toContain('+95');
 
     const thailand = await api(app, { method: 'GET', url: '/api/recruiter/partners/available?country=Thailand', cookie: alex.cookie });

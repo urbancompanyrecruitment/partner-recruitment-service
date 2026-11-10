@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { bulkApproveJourney } from '../../common/clients/onboarding.js';
 import { toCsv } from '../../common/csv.js';
-import { phoneChecksum } from '../../common/crypto/phone.js';
+import { piiChecksum } from '../../common/crypto/pii.js';
 import { pool, withTransaction } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { lockKey, withCriticalSection } from '../../common/lock/index.js';
@@ -63,7 +63,7 @@ const processRow = async (
 
   if (entries.findIndex(item => item.phone === entry.phone) !== index) return { ...row, outcome: ImportRowOutcome.DuplicateInFile };
 
-  const partnerId = await findPartnerIdByChecksum(pool, phoneChecksum(entry.phone));
+  const partnerId = await findPartnerIdByChecksum(pool, piiChecksum(entry.phone));
 
   if (!partnerId) return { ...row, outcome: ImportRowOutcome.NotFound };
 

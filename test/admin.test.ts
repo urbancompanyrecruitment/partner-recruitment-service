@@ -7,6 +7,7 @@ import {
   cookieOf,
   createApp,
   createVerifiedPartner,
+  DEFAULT_EMAIL,
   firstSlotId,
   loginAdmin,
   PASSWORD,
@@ -145,8 +146,8 @@ describe('admin', () => {
     const { temporaryPassword } = reset.json();
     expect(temporaryPassword.length).toBeGreaterThanOrEqual(8);
 
-    const old = await api(app, { method: 'POST', url: '/api/partner/auth/login', payload: { primaryPhone: '+95 9876 0000', password: PASSWORD } });
-    const fresh = await api(app, { method: 'POST', url: '/api/partner/auth/login', payload: { primaryPhone: '+95 9876 0000', password: temporaryPassword } });
+    const old = await api(app, { method: 'POST', url: '/api/partner/auth/login', payload: { email: DEFAULT_EMAIL, password: PASSWORD } });
+    const fresh = await api(app, { method: 'POST', url: '/api/partner/auth/login', payload: { email: DEFAULT_EMAIL, password: temporaryPassword } });
     expect(old.statusCode).toBe(401);
     expect(fresh.statusCode).toBe(200);
   });

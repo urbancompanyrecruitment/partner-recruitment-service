@@ -1,7 +1,7 @@
 import { config } from '../common/config/index.js';
 import { NodeEnvironment } from '../common/config/interface.js';
 import { hashPassword } from '../common/crypto/password.js';
-import { encryptPhone, phoneChecksum } from '../common/crypto/phone.js';
+import { encryptPii, piiChecksum } from '../common/crypto/pii.js';
 import { execute, pool } from '../common/db/index.js';
 import { logger } from '../common/logger.js';
 import { dayjs, nowIn, WALL_CLOCK_FORMAT } from '../common/time.js';
@@ -48,16 +48,18 @@ export const seedDatabase = async (): Promise<void> => {
         await execute(
           pool,
           `INSERT INTO partners (
-             id, primary_phone_enc, primary_phone_checksum, singapore_phone_enc, password_hash, full_name, current_country, current_city,
+             id, primary_phone_enc, primary_phone_checksum, singapore_phone_enc, email_enc, email_checksum, password_hash, full_name, current_country, current_city,
              nationality, age, source, referrer_name, comfortable_with_dogs, deep_cleaning_experience, cooking_frequency,
              consent_accepted_at, consent_version, interview_city_key, state, lead_id, onboarding_journey_id, lead_created_at,
              approved_at, verified_at, verified_by_admin_id, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 'seed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 'seed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             id,
-            encryptPhone(partner.primaryPhone),
-            phoneChecksum(partner.primaryPhone),
-            partner.singaporePhone ? encryptPhone(partner.singaporePhone) : null,
+            encryptPii(partner.primaryPhone),
+            piiChecksum(partner.primaryPhone),
+            partner.singaporePhone ? encryptPii(partner.singaporePhone) : null,
+            encryptPii(partner.email),
+            piiChecksum(partner.email),
             passwordHash,
             partner.name,
             partner.country,

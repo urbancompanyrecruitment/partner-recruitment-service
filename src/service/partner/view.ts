@@ -1,14 +1,15 @@
-import { decryptOptionalPhone, decryptPhone } from '../../common/crypto/phone.js';
+import { decryptOptionalPii, decryptPii } from '../../common/crypto/pii.js';
 import { toIsoDateTime, toOptionalIsoDateTime } from '../../common/time.js';
 import { slotIdOf } from '../interview/index.js';
 import { PARTNER_STAGE_BY_STATE } from './constant.js';
 import { PartnerState, type PartnerRow, type PartnerView } from './interface.js';
 
-export const toPartnerView = (row: PartnerRow, withPhones: boolean): PartnerView => ({
+export const toPartnerView = (row: PartnerRow, withContactDetails: boolean): PartnerView => ({
   id: row.id,
   name: row.full_name,
-  primaryPhone: withPhones ? decryptPhone(row.primary_phone_enc) : undefined,
-  singaporePhone: withPhones ? decryptOptionalPhone(row.singapore_phone_enc) : undefined,
+  email: withContactDetails ? decryptOptionalPii(row.email_enc) : undefined,
+  primaryPhone: withContactDetails ? decryptPii(row.primary_phone_enc) : undefined,
+  singaporePhone: withContactDetails ? decryptOptionalPii(row.singapore_phone_enc) : undefined,
   hasSingaporePhone: Boolean(row.singapore_phone_enc),
   country: row.current_country,
   city: row.current_city,

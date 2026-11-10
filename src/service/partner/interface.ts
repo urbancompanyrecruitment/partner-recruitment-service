@@ -48,6 +48,8 @@ export interface PartnerRow extends RowDataPacket {
   primary_phone_enc: Buffer;
   primary_phone_checksum: string;
   singapore_phone_enc: Buffer | null;
+  email_enc: Buffer | null;
+  email_checksum: string | null;
   password_hash: string;
   failed_login_count: number;
   login_locked_until: string | null;
@@ -93,6 +95,7 @@ export interface PartnerOnboarding {
 export interface PartnerView {
   id: string;
   name: string;
+  email?: string;
   primaryPhone?: string;
   singaporePhone?: string;
   hasSingaporePhone: boolean;
@@ -117,6 +120,7 @@ export interface PartnerView {
 
 export interface NewPartner {
   id: string;
+  email: string;
   primaryPhone: string;
   singaporePhone?: string;
   passwordHash: string;

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { PoolConnection } from 'mysql2/promise';
 import { assertNotLocked, nextLoginFailure } from '../../common/auth/lockout.js';
 import { hashPassword, verifyPassword } from '../../common/crypto/password.js';
-import { phoneChecksum } from '../../common/crypto/phone.js';
+import { piiChecksum } from '../../common/crypto/pii.js';
 import { pool, withTransaction } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { lockKey, withCriticalSection } from '../../common/lock/index.js';
@@ -17,6 +17,7 @@ import { syncLead } from './onboarding.js';
 import {
   findPartnerById,
   findPartnerIdByChecksum,
+  findPartnerIdByEmailChecksum,
   insertPartner,
   updateLoginFailure,
   updateLoginSuccess,
@@ -51,19 +52,26 @@ export const signUp = async (input: SignUpInput, requestId: string): Promise<Sig
 
   if (!slot || slot.cityKey !== city.key) throw new AppError(ErrorCode.SlotUnavailable, { slotId: input.slotId });
 
-  const checksum = phoneChecksum(primaryPhone);
+  const phoneChecksum = piiChecksum(primaryPhone);
+  const emailChecksum = piiChecksum(input.email);
   const passwordHash = await hashPassword(input.password);
   const partnerId = randomUUID();
   const actor = { actorType: ActorType.Partner, actorId: partnerId };
+  const keys = [lockKey.phone(phoneChecksum), lockKey.email(emailChecksum), lockKey.slot(slot.id), lockKey.partner(partnerId)];
 
-  return withCriticalSection([lockKey.phone(checksum), lockKey.slot(slot.id), lockKey.partner(partnerId)], async connection => {
-    const existingId = await findPartnerIdByChecksum(connection, checksum);
+  return withCriticalSection(keys, async connection => {
+    const existingByPhone = await findPartnerIdByChecksum(connection, phoneChecksum);
 
-    if (existingId) throw new AppError(ErrorCode.PhoneAlreadyRegistered);
+    if (existingByPhone) throw new AppError(ErrorCode.PhoneAlreadyRegistered);
+
+    const existingByEmail = await findPartnerIdByEmailChecksum(connection, emailChecksum);
+
+    if (existingByEmail) throw new AppError(ErrorCode.EmailAlreadyRegistered);
 
     await withTransaction(connection, async () => {
       await insertPartner(connection, {
         id: partnerId,
+        email: input.email,
         primaryPhone,
         singaporePhone,
         passwordHash,
@@ -109,7 +117,7 @@ export const signUp = async (input: SignUpInput, requestId: string): Promise<Sig
 };
 
 export const login = async (input: LoginInput, requestId: string): Promise<PartnerView> => {
-  const partnerId = await findPartnerIdByChecksum(pool, phoneChecksum(normalisePhone(input.primaryPhone)));
+  const partnerId = await findPartnerIdByEmailChecksum(pool, piiChecksum(input.email));
 
   if (!partnerId) throw new AppError(ErrorCode.InvalidCredentials);
 

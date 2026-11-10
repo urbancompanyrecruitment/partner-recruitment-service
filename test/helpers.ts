@@ -14,6 +14,14 @@ export const PASSWORD = 'Partner123!';
 
 export const COOKIE = { partner: 'partner_session', admin: 'admin_session', recruiter: 'recruiter_session' };
 
+export const DEFAULT_PRIMARY_PHONE = '+95 9876 0000';
+
+const NON_DIGITS = /\D/g;
+
+export const emailFor = (primaryPhone: string): string => `partner.${primaryPhone.replace(NON_DIGITS, '')}@example.com`;
+
+export const DEFAULT_EMAIL = emailFor(DEFAULT_PRIMARY_PHONE);
+
 export const prepareDatabase = async (): Promise<void> => {
   await runMigrations(config.databaseUrl);
 };
@@ -38,7 +46,8 @@ export const firstSlotId = (cityKey = 'tampines', offset = 0): string => {
 
 export const signUpBody = (overrides: Record<string, unknown> = {}) => ({
   name: 'Test Partner',
-  primaryPhone: '+95 9876 0000',
+  email: emailFor(typeof overrides.primaryPhone === 'string' ? overrides.primaryPhone : DEFAULT_PRIMARY_PHONE),
+  primaryPhone: DEFAULT_PRIMARY_PHONE,
   password: PASSWORD,
   country: 'Myanmar',
   city: 'Yangon',

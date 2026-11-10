@@ -3,6 +3,10 @@ import { InactiveReason, LockState } from '../service/lock/interface.js';
 
 export const DEMO_PASSWORD = 'Demo123!';
 
+export const SEED_EMAIL_DOMAIN = 'example.com';
+
+const WHITESPACE = /\s+/g;
+
 export const seedId = (prefix: number, index: number): string =>
   `${String(prefix).padStart(8, '0')}-0000-4000-8000-${String(index).padStart(12, '0')}`;
 
@@ -20,6 +24,7 @@ export const SEED_RECRUITERS = [
 export interface SeedPartner {
   index: number;
   name: string;
+  email: string;
   primaryPhone: string;
   singaporePhone?: string;
   country: string;
@@ -55,6 +60,7 @@ const partner = (
 ): SeedPartner => ({
   index,
   name,
+  email: `${name.toLowerCase().replace(WHITESPACE, '.')}@${SEED_EMAIL_DOMAIN}`,
   primaryPhone,
   singaporePhone,
   country: location[0],

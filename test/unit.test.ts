@@ -1,7 +1,7 @@
 import { nextLoginFailure } from '../src/common/auth/lockout.js';
 import { LOGIN_MAX_FAILURES } from '../src/common/auth/constant.js';
 import { toCsv } from '../src/common/csv.js';
-import { decryptPhone, encryptPhone, phoneChecksum } from '../src/common/crypto/phone.js';
+import { decryptPii, encryptPii, piiChecksum } from '../src/common/crypto/pii.js';
 import { isValidPhone, isValidSingaporePhone, normalisePhone } from '../src/common/phone/index.js';
 import { dayjs } from '../src/common/time.js';
 import { generateSlots, slotIdOf } from '../src/service/interview/index.js';
@@ -28,11 +28,11 @@ describe('phones', () => {
     expect(isValidSingaporePhone('+6591234567')).toBe(true);
     expect(isValidSingaporePhone('+6512345678')).toBe(false);
 
-    const encrypted = encryptPhone('+6591234567');
-    expect(decryptPhone(encrypted)).toBe('+6591234567');
-    expect(encrypted.equals(encryptPhone('+6591234567'))).toBe(false);
-    expect(phoneChecksum('+6591234567')).toBe(phoneChecksum('+6591234567'));
-    expect(phoneChecksum('+6591234567')).toHaveLength(64);
+    const encrypted = encryptPii('+6591234567');
+    expect(decryptPii(encrypted)).toBe('+6591234567');
+    expect(encrypted.equals(encryptPii('+6591234567'))).toBe(false);
+    expect(piiChecksum('+6591234567')).toBe(piiChecksum('+6591234567'));
+    expect(piiChecksum('+6591234567')).toHaveLength(64);
   });
 });
 

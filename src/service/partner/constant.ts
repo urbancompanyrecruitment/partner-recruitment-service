@@ -10,6 +10,8 @@ export const MAX_PARTNER_AGE = 80;
 
 export const NAME_MAX_LENGTH = 120;
 
+export const EMAIL_MAX_LENGTH = 190;
+
 export const COUNTRY_MAX_LENGTH = 64;
 
 export const CONSENT_VERSION = '2026-11';

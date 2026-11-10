@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   COUNTRY_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
   MAX_PARTNER_AGE,
   MIN_PARTNER_AGE,
   NAME_MAX_LENGTH,
@@ -14,8 +15,11 @@ const optionalText = (maxLength: number) =>
 
 export const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
 
+export const emailSchema = z.string().trim().toLowerCase().email().max(EMAIL_MAX_LENGTH);
+
 export const signUpSchema = z.object({
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  email: emailSchema,
   primaryPhone: z.string().trim().min(1),
   password: passwordSchema,
   singaporePhone: optionalText(32),
@@ -34,7 +38,7 @@ export const signUpSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  primaryPhone: z.string().trim().min(1),
+  email: emailSchema,
   password: z.string().min(1),
 });
 

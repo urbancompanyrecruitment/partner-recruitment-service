@@ -1,5 +1,5 @@
 import type { ResultSetHeader } from 'mysql2/promise';
-import { encryptPhone, phoneChecksum } from '../../common/crypto/phone.js';
+import { encryptPii, piiChecksum } from '../../common/crypto/pii.js';
 import { execute, query, queryOne, type Queryable } from '../../common/db/index.js';
 import { CONSENT_VERSION, PARTNER_SELECT, SEARCH_WILDCARD } from './constant.js';
 import type { NewPartner, PartnerIdRow, PartnerListFilters, PartnerRow, PartnerState, SqlClause } from './interface.js';
@@ -18,6 +18,12 @@ const filterClauses = (filters: PartnerListFilters): SqlClause[] =>
 
 export const findPartnerIdByChecksum = async (db: Queryable, checksum: string): Promise<string | undefined> => {
   const row = await queryOne<PartnerIdRow>(db, 'SELECT id FROM partners WHERE primary_phone_checksum = ?', [checksum]);
+
+  return row?.id;
+};
+
+export const findPartnerIdByEmailChecksum = async (db: Queryable, checksum: string): Promise<string | undefined> => {
+  const row = await queryOne<PartnerIdRow>(db, 'SELECT id FROM partners WHERE email_checksum = ?', [checksum]);
 
   return row?.id;
 };
@@ -43,16 +49,18 @@ export const insertPartner = (db: Queryable, partner: NewPartner): Promise<Resul
   execute(
     db,
     `INSERT INTO partners (
-       id, primary_phone_enc, primary_phone_checksum, singapore_phone_enc, password_hash,
+       id, primary_phone_enc, primary_phone_checksum, singapore_phone_enc, email_enc, email_checksum, password_hash,
        full_name, current_country, current_city, nationality, age, source, referrer_name,
        comfortable_with_dogs, deep_cleaning_experience, cooking_frequency,
        consent_accepted_at, consent_version, interview_city_key, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), ?, ?, NOW(3), NOW(3))`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), ?, ?, NOW(3), NOW(3))`,
     [
       partner.id,
-      encryptPhone(partner.primaryPhone),
-      phoneChecksum(partner.primaryPhone),
-      partner.singaporePhone ? encryptPhone(partner.singaporePhone) : null,
+      encryptPii(partner.primaryPhone),
+      piiChecksum(partner.primaryPhone),
+      partner.singaporePhone ? encryptPii(partner.singaporePhone) : null,
+      encryptPii(partner.email),
+      piiChecksum(partner.email),
       partner.passwordHash,
       partner.name,
       partner.country,
@@ -110,7 +118,7 @@ export const updatePasswordHash = (db: Queryable, id: string, passwordHash: stri
   );
 
 export const updateSingaporePhone = (db: Queryable, id: string, singaporePhone: string): Promise<ResultSetHeader> =>
-  execute(db, 'UPDATE partners SET singapore_phone_enc = ?, updated_at = NOW(3) WHERE id = ?', [encryptPhone(singaporePhone), id]);
+  execute(db, 'UPDATE partners SET singapore_phone_enc = ?, updated_at = NOW(3) WHERE id = ?', [encryptPii(singaporePhone), id]);
 
 export const updateLead = (db: Queryable, id: string, leadId: string, journeyId: string): Promise<ResultSetHeader> =>
   execute(

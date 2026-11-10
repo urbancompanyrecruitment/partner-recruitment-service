@@ -1,6 +1,6 @@
 # partner-recruitment-service
 
-Backend for the Singapore partner recruitment portal (`recruitment-portal`): partner sign-up with a primary mobile number and password, generated interview slots, admin export and verified-list upload, recruiter locks and placements. Tech design: Confluence "Partner Recruitment Portal — Backend Tech Design".
+Backend for the Singapore partner recruitment portal (`recruitment-portal`): partner sign-up with a unique primary mobile number, a unique email and a password (partners sign in with email + password), generated interview slots, admin export and verified-list upload, recruiter locks and placements. Tech design: Confluence "Partner Recruitment Portal — Backend Tech Design".
 
 Stack: Node 22+ · TypeScript (ESM) · Fastify 5 · zod · MySQL 8 (`mysql2`) · argon2id · signed-JWT cookies (`jose`) · Vitest.
 
@@ -35,7 +35,7 @@ Teammates with Docker can use `docker compose up -d` instead (same database, use
 
 | Role | Sign in with | Password |
 |---|---|---|
-| Partner | any seeded primary number, e.g. `+65 9000 0001` | `Demo123!` |
+| Partner | any seeded email, e.g. `thandar.aung@example.com` | `Demo123!` |
 | Recruiter | `alex.morgan@brightpath.sg` or `jamie.lee@horizon.sg` | `Demo123!` |
 | Admin | Google sign-in with an `urbancompany.com` / `urbanclap.com` account | — |
 
@@ -81,7 +81,7 @@ Each module keeps enums and types in `interface.ts`, constants in `constant.ts`,
 
 ### Critical sections
 
-Every read-decide-write runs inside `withCriticalSection(keys, work)`: the keys are taken with MySQL `GET_LOCK` on one pooled connection **before the first read**, the work (reads, decision, transaction, external call) runs on that connection, and the locks are released at the end. Keys: `phone:<checksum>` + `slot:<slotId>` + `partner:<id>` for sign-up, `partner:<id>` for lock, placement, release, Singapore-number update, verified import rows, mark joined, password reset and login counters, `recruiter:<id>` for recruiter login and status. If a lock cannot be acquired within 5 seconds the request fails with `LOCK_UNAVAILABLE` instead of running unlocked. Unique indexes (`primary_phone_checksum`, generated `active_partner_id`) remain as a safety net.
+Every read-decide-write runs inside `withCriticalSection(keys, work)`: the keys are taken with MySQL `GET_LOCK` on one pooled connection **before the first read**, the work (reads, decision, transaction, external call) runs on that connection, and the locks are released at the end. Keys: `phone:<checksum>` + `email:<checksum>` + `slot:<slotId>` + `partner:<id>` for sign-up, `partner:<id>` for lock, placement, release, Singapore-number update, verified import rows, mark joined, password reset and login counters, `recruiter:<id>` for recruiter login and status. If a lock cannot be acquired within 5 seconds the request fails with `LOCK_UNAVAILABLE` instead of running unlocked. Unique indexes (`primary_phone_checksum`, `email_checksum`, generated `active_partner_id`) remain as a safety net.
 
 Named locks live in MySQL itself, so there is no Redis or distributed-lock-manager dependency; they work across several instances of the service as long as they share the database (true on RDS).
 
