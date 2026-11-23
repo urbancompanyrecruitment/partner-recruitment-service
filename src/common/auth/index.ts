@@ -49,4 +49,5 @@ export const requireSession = async (request: FastifyRequest, role: ActorRole): 
 };
 
 export { ActorRole } from './interface.js';
-export type { Actor } from './interface.js';
+export type { Actor, ChangePasswordInput, TemporaryPasswordResult } from './interface.js';
+export { changePasswordSchema, passwordSchema } from './schema.js';

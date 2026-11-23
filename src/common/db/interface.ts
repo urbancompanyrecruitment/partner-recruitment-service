@@ -1,11 +1,23 @@
-import type { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
+import type { Pool, PoolClient } from 'pg';
 
-export type Queryable = Pool | PoolConnection;
+export type DbConnection = PoolClient;
 
-export interface CountRow extends RowDataPacket {
+export type Queryable = Pool | PoolClient;
+
+export interface ExecuteResult {
+  affectedRows: number;
+}
+
+export interface DatabaseError {
+  code?: string;
+  message?: string;
+  stack?: string;
+}
+
+export interface CountRow {
   total: number;
 }
 
-export interface MigrationRow extends RowDataPacket {
+export interface MigrationRow {
   name: string;
 }

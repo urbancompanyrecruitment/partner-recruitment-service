@@ -9,9 +9,10 @@ import { HTTP_STATUS } from './common/errors/constant.js';
 import { AppError, ErrorCode } from './common/errors/index.js';
 import type { Actor } from './common/auth/index.js';
 import { logger } from './common/logger.js';
-import { adminAuthRoutes, adminRoutes } from './service/admin/index.js';
+import { adminAccountRoutes, adminAuthRoutes, adminRoutes } from './service/admin/index.js';
 import { interviewRoutes } from './service/interview/routes.js';
 import { lockRoutes } from './service/lock/index.js';
+import { notificationRoutes } from './service/notification/index.js';
 import { partnerRoutes } from './service/partner/index.js';
 import { recruiterRoutes } from './service/recruiter/index.js';
 import { API_PREFIX, HEALTHCHECK_PATH } from './constant.js';
@@ -56,11 +57,15 @@ export const buildApp = async () => {
 
       await api.register(partnerRoutes);
 
+      await api.register(notificationRoutes);
+
       await api.register(recruiterRoutes);
 
       await api.register(lockRoutes);
 
       await api.register(adminAuthRoutes);
+
+      await api.register(adminAccountRoutes);
 
       await api.register(adminRoutes);
     },

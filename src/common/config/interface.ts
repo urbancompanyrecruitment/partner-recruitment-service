@@ -12,6 +12,18 @@ export interface OnboardingConfig {
   sourceType: string;
 }
 
+export interface OpsLeadUploadConfig {
+  cityKey: string;
+  categoryKey?: string;
+  sourceType: string;
+  experimentName: string;
+}
+
+export interface SignupSheetConfig {
+  webhookUrl?: string;
+  secret?: string;
+}
+
 export interface Config {
   nodeEnv: NodeEnvironment;
   port: number;
@@ -21,9 +33,8 @@ export interface Config {
   phoneEncryptionKey: Buffer;
   phoneChecksumKey: string;
   cookieSecure: boolean;
-  googleClientId: string;
-  adminEmailDomains: string[];
   onboarding: OnboardingConfig;
+  signupSheet: SignupSheetConfig;
+  opsLeadUpload: OpsLeadUploadConfig;
   lockTtlHours: number;
-  slotCapacity: number;
 }

@@ -1,56 +1,53 @@
-import { createHash } from 'node:crypto';
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { pool } from '../db/index.js';
+import {
+  ADVISORY_LOCK_SQL,
+  ADVISORY_UNLOCK_ALL_SQL,
+  LOCK_NOT_AVAILABLE_CODE,
+  RESET_LOCK_TIMEOUT_SQL,
+  SET_LOCK_TIMEOUT_SQL,
+} from '../db/constant.js';
+import { execute, pool, type DatabaseError, type DbConnection } from '../db/index.js';
 import { AppError, ErrorCode } from '../errors/index.js';
 import { logger } from '../logger.js';
-import { CHECKSUM_KEY_LENGTH, LOCK_ACQUIRE_TIMEOUT_SECONDS, LOCK_KEY_PREFIX, MAX_LOCK_NAME_LENGTH } from './constant.js';
+import { CHECKSUM_KEY_LENGTH, LOCK_ACQUIRE_TIMEOUT, LOCK_KEY_PREFIX } from './constant.js';
 
 export const lockKey = {
   phone: (checksum: string) => `${LOCK_KEY_PREFIX.phone}:${checksum.slice(0, CHECKSUM_KEY_LENGTH)}`,
-  email: (checksum: string) => `${LOCK_KEY_PREFIX.email}:${checksum.slice(0, CHECKSUM_KEY_LENGTH)}`,
   slot: (slotId: string) => `${LOCK_KEY_PREFIX.slot}:${slotId}`,
   partner: (partnerId: string) => `${LOCK_KEY_PREFIX.partner}:${partnerId}`,
   recruiter: (recruiterId: string) => `${LOCK_KEY_PREFIX.recruiter}:${recruiterId}`,
+  admin: (adminId: string) => `${LOCK_KEY_PREFIX.admin}:${adminId}`,
 };
 
-const lockName = (key: string): string =>
-  key.length <= MAX_LOCK_NAME_LENGTH ? key : createHash('sha256').update(key).digest('hex');
+const acquireLock = (connection: DbConnection, key: string): Promise<unknown> =>
+  execute(connection, ADVISORY_LOCK_SQL, [key]).catch((error: DatabaseError) => {
+    if (error?.code !== LOCK_NOT_AVAILABLE_CODE) throw error;
 
-const acquireLock = async (connection: PoolConnection, key: string): Promise<void> => {
-  const [rows] = await connection.query<RowDataPacket[]>('SELECT GET_LOCK(?, ?) AS acquired', [
-    lockName(key),
-    LOCK_ACQUIRE_TIMEOUT_SECONDS,
-  ]);
+    logger.warn({ method: 'withCriticalSection', message: 'Lock not acquired', key_1: 'lock_key', key_1_value: key });
 
-  if (rows[0]?.acquired === 1) return;
+    throw new AppError(ErrorCode.LockUnavailable, { key });
+  });
 
-  logger.warn({ method: 'withCriticalSection', message: 'Lock not acquired', key_1: 'lock_key', key_1_value: key });
-
-  throw new AppError(ErrorCode.LockUnavailable, { key });
-};
-
-const releaseLock = (connection: PoolConnection, key: string): Promise<unknown> =>
-  connection.query('SELECT RELEASE_LOCK(?)', [lockName(key)]);
-
-export const withCriticalSection = async <T>(
-  keys: string[],
-  work: (connection: PoolConnection) => Promise<T>,
-): Promise<T> => {
-  const connection = await pool.getConnection().catch((error: Error) => {
+export const withCriticalSection = async <T>(keys: string[], work: (connection: DbConnection) => Promise<T>): Promise<T> => {
+  const connection = await pool.connect().catch((error: Error) => {
     logger.error({ method: 'withCriticalSection', message: 'No database connection for lock', error: error?.message || error?.stack });
 
     throw new AppError(ErrorCode.LockUnavailable);
   });
 
   try {
-    await keys.reduce((chain, key) => chain.then(() => acquireLock(connection, key)), Promise.resolve());
+    await execute(connection, SET_LOCK_TIMEOUT_SQL, [LOCK_ACQUIRE_TIMEOUT]);
+
+    await keys.reduce((chain, key) => chain.then(() => acquireLock(connection, key)), Promise.resolve<unknown>(undefined));
+
+    await execute(connection, RESET_LOCK_TIMEOUT_SQL);
 
     return await work(connection);
   } finally {
-    await keys
-      .reduce((chain, key) => chain.then(() => releaseLock(connection, key)), Promise.resolve<unknown>(undefined))
-      .catch(() => undefined);
+    const cleaned = await execute(connection, ADVISORY_UNLOCK_ALL_SQL)
+      .then(() => execute(connection, RESET_LOCK_TIMEOUT_SQL))
+      .then(() => true)
+      .catch(() => false);
 
-    connection.release();
+    connection.release(!cleaned);
   }
 };

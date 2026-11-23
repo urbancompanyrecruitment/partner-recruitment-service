@@ -11,6 +11,8 @@ export const STUB_LEAD_PREFIX = 'lead-';
 
 export const STUB_JOURNEY_PREFIX = 'journey-';
 
+export const SHEET_TIMEOUT_MS = 10_000;
+
 export const CLIENT_ID_HEADER = 'x-client-id';
 
 export const REQUEST_ID_HEADER = 'x-request-id';

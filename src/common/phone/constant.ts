@@ -5,3 +5,5 @@ export const SINGAPORE_PHONE_PATTERN = /^\+65[89]\d{7}$/;
 export const NON_DIGITS = /\D/g;
 
 export const PHONE_PREFIX = '+';
+
+export const SINGAPORE_DIAL_CODE = '+65';

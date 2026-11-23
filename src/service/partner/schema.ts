@@ -1,34 +1,34 @@
 import { z } from 'zod';
 import {
   COUNTRY_MAX_LENGTH,
-  EMAIL_MAX_LENGTH,
   MAX_PARTNER_AGE,
   MIN_PARTNER_AGE,
   NAME_MAX_LENGTH,
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
+  NAME_PART_MAX_LENGTH,
+  NAME_SEPARATOR,
+  WHITESPACE_RUN,
 } from './constant.js';
-import { CookingFrequency, RecruitmentSource } from './interface.js';
+import { CookingFrequency, PartnerCountry, RecruitmentSource } from './interface.js';
 
 const optionalText = (maxLength: number) =>
   z.preprocess(value => (typeof value === 'string' && value.trim() ? value.trim() : undefined), z.string().max(maxLength).optional());
 
-export const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
+const namePartSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(NAME_PART_MAX_LENGTH)
+  .transform(value => value.replace(WHITESPACE_RUN, NAME_SEPARATOR));
 
-export const emailSchema = z.string().trim().toLowerCase().email().max(EMAIL_MAX_LENGTH);
-
-export const signUpSchema = z.object({
-  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-  email: emailSchema,
+export const recruiterPartnerSchema = z.object({
+  firstName: namePartSchema,
+  lastName: namePartSchema,
   primaryPhone: z.string().trim().min(1),
-  password: passwordSchema,
   singaporePhone: optionalText(32),
-  country: z.string().trim().min(1).max(COUNTRY_MAX_LENGTH),
+  country: z.enum(PartnerCountry),
   city: z.string().trim().min(1).max(NAME_MAX_LENGTH),
   nationality: z.string().trim().min(1).max(COUNTRY_MAX_LENGTH),
   age: z.number().int().min(MIN_PARTNER_AGE).max(MAX_PARTNER_AGE),
-  source: z.enum(RecruitmentSource),
-  referrer: optionalText(NAME_MAX_LENGTH),
   comfortableWithDogs: z.boolean(),
   deepCleaningExperience: z.boolean(),
   cookingFrequency: z.enum(CookingFrequency),
@@ -37,12 +37,17 @@ export const signUpSchema = z.object({
   slotId: z.string().trim().min(1),
 });
 
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1),
+export const signUpSchema = recruiterPartnerSchema.extend({
+  source: z.enum(RecruitmentSource),
+  referrer: optionalText(NAME_MAX_LENGTH),
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: passwordSchema,
+export const loginSchema = z.object({
+  primaryPhone: z.string().trim().min(1),
+  lastName: namePartSchema,
+});
+
+export const rescheduleSchema = z.object({
+  interviewCity: z.string().trim().min(1),
+  slotId: z.string().trim().min(1),
 });

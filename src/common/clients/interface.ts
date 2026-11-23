@@ -3,6 +3,11 @@ export interface CreateLeadInput {
   partnerId: string;
 }
 
+export interface SheetWebhookResponse {
+  ok?: boolean;
+  error?: string;
+}
+
 export interface CreateLeadResult {
   leadId: string;
   journeyId: string;

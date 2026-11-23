@@ -1,13 +1,12 @@
 import { decryptOptionalPii, decryptPii } from '../../common/crypto/pii.js';
 import { toIsoDateTime, toOptionalIsoDateTime } from '../../common/time.js';
 import { slotIdOf } from '../interview/index.js';
-import { PARTNER_STAGE_BY_STATE } from './constant.js';
-import { PartnerState, type PartnerRow, type PartnerView } from './interface.js';
+import { PARTNER_STAGE_BY_STATE, VERIFIED_STATES } from './constant.js';
+import type { PartnerRow, PartnerView } from './interface.js';
 
 export const toPartnerView = (row: PartnerRow, withContactDetails: boolean): PartnerView => ({
   id: row.id,
   name: row.full_name,
-  email: withContactDetails ? decryptOptionalPii(row.email_enc) : undefined,
   primaryPhone: withContactDetails ? decryptPii(row.primary_phone_enc) : undefined,
   singaporePhone: withContactDetails ? decryptOptionalPii(row.singapore_phone_enc) : undefined,
   hasSingaporePhone: Boolean(row.singapore_phone_enc),
@@ -17,6 +16,10 @@ export const toPartnerView = (row: PartnerRow, withContactDetails: boolean): Par
   age: row.age,
   source: row.source,
   referrer: row.referrer_name ?? undefined,
+  registeredBy:
+    row.registered_by_recruiter_id && row.registered_by_name
+      ? { recruiterId: row.registered_by_recruiter_id, name: row.registered_by_name, company: row.registered_by_company ?? '' }
+      : undefined,
   comfortableWithDogs: Boolean(row.comfortable_with_dogs),
   deepCleaningExperience: Boolean(row.deep_cleaning_experience),
   cookingFrequency: row.cooking_frequency,
@@ -24,8 +27,9 @@ export const toPartnerView = (row: PartnerRow, withContactDetails: boolean): Par
   slotId: row.booking_city_key && row.booking_starts_at ? slotIdOf(row.booking_city_key, row.booking_starts_at) : undefined,
   state: row.state,
   stage: PARTNER_STAGE_BY_STATE[row.state],
-  verified: row.state !== PartnerState.SignedUp,
+  verified: VERIFIED_STATES.includes(row.state),
   verifiedAt: toOptionalIsoDateTime(row.verified_at),
+  hubName: row.hub_name ?? undefined,
   onboarding: row.lead_id
     ? {
         leadId: row.lead_id,

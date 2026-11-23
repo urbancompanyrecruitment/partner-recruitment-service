@@ -1,21 +1,21 @@
 services:
-  mysql:
-    image: mysql:8.4
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci --default-time-zone=+00:00
+  postgres:
+    image: postgres:17
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: partner_recruitment
-      MYSQL_USER: recruitment
-      MYSQL_PASSWORD: recruitment
+      POSTGRES_USER: recruitment
+      POSTGRES_PASSWORD: recruitment
+      POSTGRES_DB: partner_recruitment
+      TZ: UTC
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/docker-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U recruitment -d partner_recruitment"]
       interval: 5s
       timeout: 3s
       retries: 20
 
 volumes:
-  mysql-data:
+  postgres-data:

@@ -1,21 +1,25 @@
-import mysql, { type PoolConnection, type ResultSetHeader, type RowDataPacket } from 'mysql2/promise';
+import pg, { type QueryResultRow } from 'pg';
 import { config } from '../config/index.js';
-import { POOL_CONNECTION_LIMIT, SESSION_TIME_ZONE_SQL } from './constant.js';
-import type { CountRow, Queryable } from './interface.js';
+import { logger } from '../logger.js';
+import { dayjs, DB_DATE_TIME_FORMAT } from '../time.js';
+import { FRACTION_DIGITS, FRACTION_SEPARATOR, PLACEHOLDER, POOL_CONNECTION_LIMIT, SESSION_OPTIONS } from './constant.js';
+import type { CountRow, DbConnection, ExecuteResult, Queryable } from './interface.js';
 
-export const createPool = (databaseUrl: string, multipleStatements = false) => {
-  const created = mysql.createPool({
-    uri: databaseUrl,
-    waitForConnections: true,
-    connectionLimit: POOL_CONNECTION_LIMIT,
-    dateStrings: true,
-    timezone: 'Z',
-    decimalNumbers: true,
-    multipleStatements,
-  });
+pg.types.setTypeParser(pg.types.builtins.INT8, Number);
 
-  created.on('connection', connection => {
-    connection.query(SESSION_TIME_ZONE_SQL);
+pg.types.setTypeParser(pg.types.builtins.DATE, value => value);
+
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, value => {
+  const [wallClock, fraction] = value.split(FRACTION_SEPARATOR);
+
+  return fraction ? `${wallClock}${FRACTION_SEPARATOR}${fraction.padEnd(FRACTION_DIGITS, '0')}` : value;
+});
+
+export const createPool = (databaseUrl: string) => {
+  const created = new pg.Pool({ connectionString: databaseUrl, max: POOL_CONNECTION_LIMIT, options: SESSION_OPTIONS });
+
+  created.on('error', error => {
+    logger.error({ method: 'createPool', message: 'Idle database connection failed', error: error?.message || error?.stack });
   });
 
   return created;
@@ -23,17 +27,19 @@ export const createPool = (databaseUrl: string, multipleStatements = false) => {
 
 export const pool = createPool(config.databaseUrl);
 
-export const query = async <T extends RowDataPacket>(db: Queryable, sql: string, params: unknown[] = []): Promise<T[]> => {
-  const [rows] = await db.query<T[]>(sql, params);
+const run = (db: Queryable, sql: string, params: unknown[]) =>
+  db.query(
+    sql.split(PLACEHOLDER).reduce((statement, part, index) => `${statement}$${index}${part}`),
+    params.map(param => (param instanceof Date ? dayjs.utc(param).format(DB_DATE_TIME_FORMAT) : param)),
+  );
 
-  return rows;
+export const query = async <T = QueryResultRow>(db: Queryable, sql: string, params: unknown[] = []): Promise<T[]> => {
+  const result = await run(db, sql, params);
+
+  return result.rows as T[];
 };
 
-export const queryOne = async <T extends RowDataPacket>(
-  db: Queryable,
-  sql: string,
-  params: unknown[] = [],
-): Promise<T | undefined> => {
+export const queryOne = async <T = QueryResultRow>(db: Queryable, sql: string, params: unknown[] = []): Promise<T | undefined> => {
   const rows = await query<T>(db, sql, params);
 
   return rows[0];
@@ -45,26 +51,26 @@ export const count = async (db: Queryable, sql: string, params: unknown[] = []):
   return Number(row?.total ?? 0);
 };
 
-export const execute = async (db: Queryable, sql: string, params: unknown[] = []): Promise<ResultSetHeader> => {
-  const [result] = await db.query<ResultSetHeader>(sql, params);
+export const execute = async (db: Queryable, sql: string, params: unknown[] = []): Promise<ExecuteResult> => {
+  const result = await run(db, sql, params);
 
-  return result;
+  return { affectedRows: result.rowCount ?? 0 };
 };
 
-export const withTransaction = async <T>(connection: PoolConnection, work: () => Promise<T>): Promise<T> => {
-  await connection.beginTransaction();
+export const withTransaction = async <T>(connection: DbConnection, work: () => Promise<T>): Promise<T> => {
+  await connection.query('BEGIN');
 
   try {
     const result = await work();
 
-    await connection.commit();
+    await connection.query('COMMIT');
 
     return result;
   } catch (error) {
-    await connection.rollback();
+    await connection.query('ROLLBACK');
 
     throw error;
   }
 };
 
-export type { Queryable } from './interface.js';
+export type { DatabaseError, DbConnection, ExecuteResult, Queryable } from './interface.js';

@@ -1,4 +1,4 @@
-import type { PoolConnection } from 'mysql2/promise';
+import type { DbConnection } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { AuditAction, AuditEntityType, recordAudit } from '../audit/index.js';
 import { PARTNER_TRANSITIONS } from './constant.js';
@@ -6,7 +6,7 @@ import type { PartnerRow, PartnerState, TransitionActor } from './interface.js';
 import { insertStateHistory, updatePartnerState } from './repository.js';
 
 export const transitionPartner = async (
-  connection: PoolConnection,
+  connection: DbConnection,
   partner: PartnerRow,
   toState: PartnerState,
   actor: TransitionActor,

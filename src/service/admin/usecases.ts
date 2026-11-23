@@ -1,13 +1,16 @@
 import { config } from '../../common/config/index.js';
-import { toCsv } from '../../common/csv.js';
-import { generateTemporaryPassword, hashPassword } from '../../common/crypto/password.js';
+import { toCsv, toPlainCsv } from '../../common/csv.js';
 import { pool } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { lockKey, withCriticalSection } from '../../common/lock/index.js';
 import { logger } from '../../common/logger.js';
+import { SINGAPORE_DIAL_CODE } from '../../common/phone/constant.js';
 import { isValidSingaporePhone, normalisePhone } from '../../common/phone/index.js';
+import { listAllAggregators } from '../aggregator/index.js';
 import { ActorType, AuditAction, AuditEntityType, recordAudit } from '../audit/index.js';
+import { listRecruiterLockStats } from '../lock/index.js';
 import {
+  approveLead,
   listPartners,
   PartnerState,
   requirePartnerRow,
@@ -15,24 +18,30 @@ import {
   toPartnerView,
   TRANSITION_REASON,
   transitionPartner,
-  updatePasswordHash,
   updateSingaporePhone,
+  VERIFIED_STATES,
   type PartnerListFilters,
   type PartnerView,
 } from '../partner/index.js';
-import { EMAIL_SEPARATOR, EXPORT_CSV_HEADERS } from './constant.js';
-import { verifyGoogleCredential } from './google.js';
-import type { AdminView, TemporaryPasswordResult } from './interface.js';
+import { listRecruiters } from '../recruiter/index.js';
+import { EXPORT_CSV_HEADERS, OPS_UPLOAD_CSV_HEADERS, OPS_UPLOAD_MAX_ROWS } from './constant.js';
+import type { RecruiterWithStats } from './interface.js';
 
-export const loginAdmin = async (credential: string): Promise<AdminView> => {
-  const identity = await verifyGoogleCredential(credential);
-  const domain = identity.email.split(EMAIL_SEPARATOR)[1] ?? '';
+export const listRecruitersWithStats = async (): Promise<RecruiterWithStats[]> => {
+  const recruiters = await listRecruiters();
+  const stats = await listRecruiterLockStats();
+  const aggregators = await listAllAggregators();
 
-  if (!config.adminEmailDomains.includes(domain)) throw new AppError(ErrorCode.Forbidden, { domain });
+  return recruiters.map(recruiter => {
+    const own = stats.find(item => item.recruiterId === recruiter.id);
 
-  logger.info({ method: 'loginAdmin', key_1: 'admin_id', key_1_value: identity.id });
-
-  return identity;
+    return {
+      ...recruiter,
+      locksAcquired: own?.locksAcquired ?? 0,
+      placementsSubmitted: own?.placementsSubmitted ?? 0,
+      aggregators: aggregators.filter(aggregator => aggregator.recruiterId === recruiter.id),
+    };
+  });
 };
 
 export const listAdminPartners = async (filters: PartnerListFilters): Promise<PartnerView[]> =>
@@ -57,6 +66,40 @@ export const exportPartners = async (filters: PartnerListFilters, adminId: strin
   ]);
 };
 
+export const exportPartnersForOps = async (filters: PartnerListFilters, adminId: string, requestId: string): Promise<string> => {
+  const { cityKey, categoryKey, sourceType, experimentName } = config.opsLeadUpload;
+
+  if (!categoryKey) throw new AppError(ErrorCode.OpsUploadNotConfigured);
+
+  const partners = (await listAdminPartners(filters))
+    .filter(partner => partner.state !== PartnerState.VerificationFailed)
+    .map(partner => ({ name: partner.name, singaporePhone: partner.singaporePhone ?? '' }))
+    .filter(partner => isValidSingaporePhone(partner.singaporePhone))
+    .slice(0, OPS_UPLOAD_MAX_ROWS);
+
+  await recordAudit(pool, {
+    action: AuditAction.PartnersOpsUploadExported,
+    actorType: ActorType.Admin,
+    actorId: adminId,
+    entityType: AuditEntityType.Partner,
+    entityId: 'export',
+    data: { filters, count: partners.length },
+    requestId,
+  });
+
+  return toPlainCsv([
+    OPS_UPLOAD_CSV_HEADERS,
+    ...partners.map(partner => [
+      partner.name,
+      partner.singaporePhone.slice(SINGAPORE_DIAL_CODE.length),
+      cityKey,
+      categoryKey,
+      sourceType,
+      experimentName,
+    ]),
+  ]);
+};
+
 export const setSingaporePhone = (partnerId: string, raw: string, adminId: string, requestId: string): Promise<PartnerView> => {
   const singaporePhone = normalisePhone(raw);
 
@@ -65,6 +108,10 @@ export const setSingaporePhone = (partnerId: string, raw: string, adminId: strin
   return withCriticalSection([lockKey.partner(partnerId)], async connection => {
     const partner = await requirePartnerRow(connection, partnerId);
     const actor = { actorType: ActorType.Admin, actorId: adminId };
+
+    if (partner.state === PartnerState.VerificationFailed) {
+      throw new AppError(ErrorCode.InvalidTransition, { from: partner.state, change: 'singapore_phone' });
+    }
 
     await updateSingaporePhone(connection, partnerId, singaporePhone);
 
@@ -79,29 +126,17 @@ export const setSingaporePhone = (partnerId: string, raw: string, adminId: strin
 
     await syncLead(connection, partner, singaporePhone, actor, requestId);
 
+    const withLead = await requirePartnerRow(connection, partnerId);
+
+    if (VERIFIED_STATES.includes(withLead.state)) {
+      const approved = await approveLead(connection, withLead, actor, requestId);
+
+      logger.info({ method: 'setSingaporePhone', partnerId, key_1: 'lead_approved', key_1_value: String(approved) });
+    }
+
     return toPartnerView(await requirePartnerRow(connection, partnerId), true);
   });
 };
-
-export const resetPartnerPassword = (partnerId: string, adminId: string, requestId: string): Promise<TemporaryPasswordResult> =>
-  withCriticalSection([lockKey.partner(partnerId)], async connection => {
-    await requirePartnerRow(connection, partnerId);
-
-    const temporaryPassword = generateTemporaryPassword();
-
-    await updatePasswordHash(connection, partnerId, await hashPassword(temporaryPassword));
-
-    await recordAudit(connection, {
-      action: AuditAction.PartnerPasswordReset,
-      actorType: ActorType.Admin,
-      actorId: adminId,
-      entityType: AuditEntityType.Partner,
-      entityId: partnerId,
-      requestId,
-    });
-
-    return { temporaryPassword };
-  });
 
 export const markJoined = (partnerId: string, adminId: string, requestId: string): Promise<PartnerView> =>
   withCriticalSection([lockKey.partner(partnerId)], async connection => {

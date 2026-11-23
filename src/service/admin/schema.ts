@@ -1,7 +1,21 @@
 import { z } from 'zod';
-import { CookingFrequency, PartnerState, RecruitmentSource } from '../partner/index.js';
+import { PartnerState, RecruitmentSource } from '../partner/index.js';
+import { EMAIL_MAX_LENGTH, NAME_MAX_LENGTH } from './constant.js';
+import { AdminRole, AdminStatus } from './interface.js';
 
-export const googleLoginSchema = z.object({ credential: z.string().min(1) });
+const emailSchema = z.string().trim().toLowerCase().email().max(EMAIL_MAX_LENGTH);
+
+export const adminLoginSchema = z.object({ email: emailSchema, password: z.string().min(1) });
+
+export const createAdminSchema = z.object({
+  email: emailSchema,
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  role: z.enum(AdminRole).default(AdminRole.Admin),
+});
+
+export const adminStatusSchema = z.object({ status: z.enum(AdminStatus) });
+
+export const adminParamsSchema = z.object({ adminId: z.string().uuid() });
 
 export const singaporePhoneSchema = z.object({ singaporePhone: z.string().trim().min(1) });
 
@@ -21,5 +35,3 @@ export const partnerParamsSchema = z.object({ partnerId: z.string().uuid() });
 export const recruiterParamsSchema = z.object({ recruiterId: z.string().uuid() });
 
 export const occupancyQuerySchema = z.object({ cityKey: z.string().trim().min(1).optional() });
-
-export const COOKING_FREQUENCIES = Object.values(CookingFrequency);

@@ -1,17 +1,19 @@
 import { z } from 'zod';
 import {
-  DEFAULT_ADMIN_EMAIL_DOMAINS,
   DEFAULT_LOCK_TTL_HOURS,
   DEFAULT_LOG_LEVEL,
   DEFAULT_ONBOARDING_CATEGORY_KEY,
   DEFAULT_ONBOARDING_CITY_KEY,
   DEFAULT_ONBOARDING_CLIENT_ID,
   DEFAULT_ONBOARDING_SOURCE_TYPE,
+  DEFAULT_OPS_LEAD_UPLOAD_CITY_KEY,
+  DEFAULT_OPS_LEAD_UPLOAD_EXPERIMENT_NAME,
+  DEFAULT_OPS_LEAD_UPLOAD_SOURCE_TYPE,
   DEFAULT_PORT,
-  DEFAULT_SLOT_CAPACITY,
   ENCRYPTION_KEY_HEX_LENGTH,
-  LIST_SEPARATOR,
   MIN_SECRET_LENGTH,
+  OPS_LEAD_UPLOAD_EXPERIMENT_NAME_PATTERN,
+  OPS_LEAD_UPLOAD_SOURCE_TYPES,
 } from './constant.js';
 import { NodeEnvironment, type Config } from './interface.js';
 
@@ -32,15 +34,21 @@ const environmentSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(value => value === 'true'),
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  ADMIN_EMAIL_DOMAINS: z.string().default(DEFAULT_ADMIN_EMAIL_DOMAINS),
   ONBOARDING_BASE_URL: optionalString,
   ONBOARDING_CLIENT_ID: z.string().default(DEFAULT_ONBOARDING_CLIENT_ID),
   ONBOARDING_CATEGORY_KEY: z.string().default(DEFAULT_ONBOARDING_CATEGORY_KEY),
   ONBOARDING_CITY_KEY: z.string().default(DEFAULT_ONBOARDING_CITY_KEY),
   ONBOARDING_SOURCE_TYPE: z.string().default(DEFAULT_ONBOARDING_SOURCE_TYPE),
+  SIGNUP_SHEET_WEBHOOK_URL: optionalString,
+  SIGNUP_SHEET_WEBHOOK_SECRET: optionalString,
+  OPS_LEAD_UPLOAD_CITY_KEY: z.string().min(1).default(DEFAULT_OPS_LEAD_UPLOAD_CITY_KEY),
+  OPS_LEAD_UPLOAD_CATEGORY_KEY: optionalString,
+  OPS_LEAD_UPLOAD_SOURCE_TYPE: z.enum(OPS_LEAD_UPLOAD_SOURCE_TYPES).default(DEFAULT_OPS_LEAD_UPLOAD_SOURCE_TYPE),
+  OPS_LEAD_UPLOAD_EXPERIMENT_NAME: z
+    .string()
+    .regex(OPS_LEAD_UPLOAD_EXPERIMENT_NAME_PATTERN)
+    .default(DEFAULT_OPS_LEAD_UPLOAD_EXPERIMENT_NAME),
   LOCK_TTL_HOURS: z.coerce.number().positive().default(DEFAULT_LOCK_TTL_HOURS),
-  SLOT_CAPACITY: z.coerce.number().int().positive().default(DEFAULT_SLOT_CAPACITY),
 });
 
 export const loadConfig = (environment: NodeJS.ProcessEnv): Config => {
@@ -55,10 +63,6 @@ export const loadConfig = (environment: NodeJS.ProcessEnv): Config => {
     phoneEncryptionKey: Buffer.from(parsed.PHONE_ENCRYPTION_KEY, 'hex'),
     phoneChecksumKey: parsed.PHONE_CHECKSUM_KEY,
     cookieSecure: parsed.COOKIE_SECURE,
-    googleClientId: parsed.GOOGLE_CLIENT_ID,
-    adminEmailDomains: parsed.ADMIN_EMAIL_DOMAINS.split(LIST_SEPARATOR)
-      .map(domain => domain.trim().toLowerCase())
-      .filter(Boolean),
     onboarding: {
       baseUrl: parsed.ONBOARDING_BASE_URL,
       clientId: parsed.ONBOARDING_CLIENT_ID,
@@ -66,8 +70,14 @@ export const loadConfig = (environment: NodeJS.ProcessEnv): Config => {
       cityKey: parsed.ONBOARDING_CITY_KEY,
       sourceType: parsed.ONBOARDING_SOURCE_TYPE,
     },
+    signupSheet: { webhookUrl: parsed.SIGNUP_SHEET_WEBHOOK_URL, secret: parsed.SIGNUP_SHEET_WEBHOOK_SECRET },
+    opsLeadUpload: {
+      cityKey: parsed.OPS_LEAD_UPLOAD_CITY_KEY,
+      categoryKey: parsed.OPS_LEAD_UPLOAD_CATEGORY_KEY,
+      sourceType: parsed.OPS_LEAD_UPLOAD_SOURCE_TYPE,
+      experimentName: parsed.OPS_LEAD_UPLOAD_EXPERIMENT_NAME,
+    },
     lockTtlHours: parsed.LOCK_TTL_HOURS,
-    slotCapacity: parsed.SLOT_CAPACITY,
   };
 };
 

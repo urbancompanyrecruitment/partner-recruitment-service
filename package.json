@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend for the Singapore partner recruitment portal: sign-up, interview slots, verification, recruiter locks and placements",
+  "description": "Backend for the partner recruitment portal: sign-up, interview slots, verification, hubs, recruiter approval, locks and placements",
   "engines": {
     "node": ">=22"
   },
@@ -17,8 +17,10 @@
     "workflow:deactivate-expired-locks": "node --env-file-if-exists=.env --import tsx src/workflow/deactivateExpiredLocks.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:local": "mysql -u root --protocol=tcp -h 127.0.0.1 < scripts/local-db.sql",
-    "migrate:test": "node --env-file=.env.test --import tsx src/common/db/migrate.ts"
+    "db:local": "psql -d postgres -v ON_ERROR_STOP=1 -f scripts/local-db.sql",
+    "migrate:test": "node --env-file=.env.test --import tsx src/common/db/migrate.ts",
+    "admin:create": "node --env-file-if-exists=.env --import tsx src/scripts/createAdmin.ts",
+    "sheet:sync": "node --env-file-if-exists=.env --import tsx src/scripts/syncSheet.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",
@@ -26,14 +28,14 @@
     "argon2": "^0.45.2",
     "dayjs": "^1.11.23",
     "fastify": "^5.12.8",
-    "google-auth-library": "^11.3.3",
     "jose": "^6.1.0",
-    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"

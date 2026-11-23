@@ -1,143 +1,268 @@
-CREATE TABLE partners (
-  id                       CHAR(36)         NOT NULL,
-  primary_phone_enc        VARBINARY(255)   NOT NULL,
-  primary_phone_checksum   CHAR(64)         NOT NULL,
-  singapore_phone_enc      VARBINARY(255)   NULL,
-  password_hash            VARCHAR(255)     NOT NULL,
-  failed_login_count       TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  login_locked_until       DATETIME(3)      NULL,
-  last_login_at            DATETIME(3)      NULL,
-  full_name                VARCHAR(120)     NOT NULL,
-  current_country          VARCHAR(64)      NOT NULL,
-  current_city             VARCHAR(120)     NOT NULL,
-  nationality              VARCHAR(64)      NOT NULL,
-  age                      TINYINT UNSIGNED NOT NULL,
-  source                   ENUM('tiktok','facebook','referral','recruiter','aggregator','influencer','direct','other') NOT NULL,
-  referrer_name            VARCHAR(120)     NULL,
-  comfortable_with_dogs    TINYINT(1)       NOT NULL,
-  deep_cleaning_experience TINYINT(1)       NOT NULL,
-  cooking_frequency        ENUM('never','occasionally','frequently','very_frequently','daily') NOT NULL,
-  consent_accepted_at      DATETIME(3)      NOT NULL,
-  consent_version          VARCHAR(16)      NOT NULL,
-  interview_city_key       VARCHAR(32)      NOT NULL,
-  state                    ENUM('signed_up','verified','placed','joined') NOT NULL DEFAULT 'signed_up',
-  lead_id                  VARCHAR(64)      NULL,
-  onboarding_journey_id    VARCHAR(64)      NULL,
-  lead_created_at          DATETIME(3)      NULL,
-  approved_at              DATETIME(3)      NULL,
-  verified_at              DATETIME(3)      NULL,
-  verified_by_admin_id     VARCHAR(64)      NULL,
-  verification_import_id   CHAR(36)         NULL,
-  created_at               DATETIME(3)      NOT NULL,
-  updated_at               DATETIME(3)      NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_partners_primary_phone (primary_phone_checksum),
-  KEY ix_partners_state_created (state, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE partner_state_history (
-  id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  partner_id  CHAR(36)        NOT NULL,
-  from_state  ENUM('signed_up','verified','placed','joined') NULL,
-  to_state    ENUM('signed_up','verified','placed','joined') NOT NULL,
-  actor_type  ENUM('partner','admin','recruiter','system') NOT NULL,
-  actor_id    VARCHAR(64)     NULL,
-  reason      VARCHAR(255)    NOT NULL,
-  created_at  DATETIME(3)     NOT NULL,
-  PRIMARY KEY (id),
-  KEY ix_psh_partner (partner_id, created_at),
-  CONSTRAINT fk_psh_partner FOREIGN KEY (partner_id) REFERENCES partners (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE slot_bookings (
-  id          CHAR(36)    NOT NULL,
-  partner_id  CHAR(36)    NOT NULL,
-  city_key    VARCHAR(32) NOT NULL,
-  starts_at   DATETIME    NOT NULL,
-  created_at  DATETIME(3) NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_slot_bookings_partner (partner_id),
-  KEY ix_slot_bookings_slot (city_key, starts_at),
-  CONSTRAINT fk_slot_bookings_partner FOREIGN KEY (partner_id) REFERENCES partners (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE admins (
+  id                   VARCHAR(36)  NOT NULL,
+  email                VARCHAR(190) NOT NULL,
+  full_name            VARCHAR(120) NOT NULL,
+  password_hash        VARCHAR(255) NOT NULL,
+  role                 VARCHAR(16)  NOT NULL DEFAULT 'admin',
+  status               VARCHAR(16)  NOT NULL DEFAULT 'active',
+  failed_login_count   SMALLINT     NOT NULL DEFAULT 0,
+  login_locked_until   TIMESTAMP(3) NULL,
+  last_login_at        TIMESTAMP(3) NULL,
+  created_by_admin_id  VARCHAR(64)  NULL,
+  created_at           TIMESTAMP(3) NOT NULL,
+  updated_at           TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_admins PRIMARY KEY (id),
+  CONSTRAINT uk_admins_email UNIQUE (email),
+  CONSTRAINT ck_admins_role CHECK (role IN ('super_admin', 'admin')),
+  CONSTRAINT ck_admins_status CHECK (status IN ('active', 'suspended'))
+);
 
 CREATE TABLE recruiters (
-  id                   CHAR(36)         NOT NULL,
-  email                VARCHAR(190)     NOT NULL,
-  full_name            VARCHAR(120)     NOT NULL,
-  company              VARCHAR(120)     NOT NULL,
-  password_hash        VARCHAR(255)     NOT NULL,
-  status               ENUM('active','suspended') NOT NULL DEFAULT 'active',
-  failed_login_count   TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  login_locked_until   DATETIME(3)      NULL,
-  created_by_admin_id  VARCHAR(64)      NOT NULL,
-  last_login_at        DATETIME(3)      NULL,
-  created_at           DATETIME(3)      NOT NULL,
-  updated_at           DATETIME(3)      NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_recruiters_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  id                    VARCHAR(36)  NOT NULL,
+  email                 VARCHAR(190) NOT NULL,
+  full_name             VARCHAR(120) NOT NULL,
+  company               VARCHAR(120) NOT NULL,
+  password_hash         VARCHAR(255) NOT NULL,
+  status                VARCHAR(16)  NOT NULL DEFAULT 'active',
+  failed_login_count    SMALLINT     NOT NULL DEFAULT 0,
+  login_locked_until    TIMESTAMP(3) NULL,
+  created_by_admin_id   VARCHAR(64)  NULL,
+  reviewed_by_admin_id  VARCHAR(64)  NULL,
+  reviewed_at           TIMESTAMP(3) NULL,
+  last_login_at         TIMESTAMP(3) NULL,
+  created_at            TIMESTAMP(3) NOT NULL,
+  updated_at            TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_recruiters PRIMARY KEY (id),
+  CONSTRAINT uk_recruiters_email UNIQUE (email),
+  CONSTRAINT ck_recruiters_status CHECK (status IN ('pending', 'active', 'suspended', 'rejected'))
+);
+
+CREATE TABLE partners (
+  id                          VARCHAR(36)  NOT NULL,
+  primary_phone_enc           BYTEA        NOT NULL,
+  primary_phone_checksum      VARCHAR(64)  NOT NULL,
+  singapore_phone_enc         BYTEA        NULL,
+  email_enc                   BYTEA        NULL,
+  email_checksum              VARCHAR(64)  NULL,
+  password_hash               VARCHAR(255) NULL,
+  failed_login_count          SMALLINT     NOT NULL DEFAULT 0,
+  login_locked_until          TIMESTAMP(3) NULL,
+  last_login_at               TIMESTAMP(3) NULL,
+  full_name                   VARCHAR(120) NOT NULL,
+  last_name                   VARCHAR(120) NOT NULL,
+  current_country             VARCHAR(64)  NOT NULL,
+  current_city                VARCHAR(120) NOT NULL,
+  nationality                 VARCHAR(64)  NOT NULL,
+  age                         SMALLINT     NOT NULL,
+  source                      VARCHAR(16)  NOT NULL,
+  referrer_name               VARCHAR(120) NULL,
+  registered_by_recruiter_id  VARCHAR(36)  NULL,
+  comfortable_with_dogs       BOOLEAN      NOT NULL,
+  deep_cleaning_experience    BOOLEAN      NOT NULL,
+  cooking_frequency           VARCHAR(16)  NOT NULL,
+  consent_accepted_at         TIMESTAMP(3) NOT NULL,
+  consent_version             VARCHAR(16)  NOT NULL,
+  interview_city_key          VARCHAR(32)  NOT NULL,
+  state                       VARCHAR(24)  NOT NULL DEFAULT 'signed_up',
+  lead_id                     VARCHAR(64)  NULL,
+  onboarding_journey_id       VARCHAR(64)  NULL,
+  lead_created_at             TIMESTAMP(3) NULL,
+  approved_at                 TIMESTAMP(3) NULL,
+  verified_at                 TIMESTAMP(3) NULL,
+  verified_by_admin_id        VARCHAR(64)  NULL,
+  verification_import_id      VARCHAR(36)  NULL,
+  hub_name                    VARCHAR(120) NULL,
+  hub_updated_at              TIMESTAMP(3) NULL,
+  sheet_synced_at             TIMESTAMP(3) NULL,
+  created_at                  TIMESTAMP(3) NOT NULL,
+  updated_at                  TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_partners PRIMARY KEY (id),
+  CONSTRAINT uk_partners_primary_phone UNIQUE (primary_phone_checksum),
+  CONSTRAINT uk_partners_email UNIQUE (email_checksum),
+  CONSTRAINT fk_partners_registered_by FOREIGN KEY (registered_by_recruiter_id) REFERENCES recruiters (id),
+  CONSTRAINT ck_partners_source CHECK (source IN ('tiktok', 'facebook', 'referral', 'recruiter', 'aggregator', 'influencer', 'direct', 'other')),
+  CONSTRAINT ck_partners_cooking_frequency CHECK (cooking_frequency IN ('never', 'occasionally', 'frequently', 'very_frequently', 'daily')),
+  CONSTRAINT ck_partners_state CHECK (state IN ('signed_up', 'verified', 'verification_failed', 'placed', 'joined'))
+);
+
+CREATE INDEX ix_partners_state_created ON partners (state, created_at);
+CREATE INDEX ix_partners_registered_by ON partners (registered_by_recruiter_id);
+
+CREATE TABLE partner_state_history (
+  id          BIGINT GENERATED BY DEFAULT AS IDENTITY,
+  partner_id  VARCHAR(36)  NOT NULL,
+  from_state  VARCHAR(24)  NULL,
+  to_state    VARCHAR(24)  NOT NULL,
+  actor_type  VARCHAR(16)  NOT NULL,
+  actor_id    VARCHAR(64)  NULL,
+  reason      VARCHAR(255) NOT NULL,
+  created_at  TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_partner_state_history PRIMARY KEY (id),
+  CONSTRAINT fk_psh_partner FOREIGN KEY (partner_id) REFERENCES partners (id),
+  CONSTRAINT ck_psh_from_state CHECK (from_state IN ('signed_up', 'verified', 'verification_failed', 'placed', 'joined')),
+  CONSTRAINT ck_psh_to_state CHECK (to_state IN ('signed_up', 'verified', 'verification_failed', 'placed', 'joined')),
+  CONSTRAINT ck_psh_actor_type CHECK (actor_type IN ('partner', 'admin', 'recruiter', 'system'))
+);
+
+CREATE INDEX ix_psh_partner ON partner_state_history (partner_id, created_at);
+
+CREATE TABLE interview_slots (
+  id            VARCHAR(36)  NOT NULL,
+  country       VARCHAR(64)  NOT NULL,
+  city_key      VARCHAR(32)  NOT NULL,
+  city_name     VARCHAR(64)  NOT NULL,
+  centre        VARCHAR(160) NOT NULL,
+  address       VARCHAR(255) NOT NULL,
+  instructions  VARCHAR(500) NOT NULL,
+  time_zone     VARCHAR(64)  NOT NULL,
+  start_time    TIME(0)      NOT NULL,
+  end_time      TIME(0)      NOT NULL,
+  capacity      INTEGER      NOT NULL,
+  is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMP(3) NOT NULL,
+  updated_at    TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_interview_slots PRIMARY KEY (id),
+  CONSTRAINT uk_interview_slots_city_time UNIQUE (city_key, start_time),
+  CONSTRAINT ck_interview_slots_capacity CHECK (capacity >= 0)
+);
+
+CREATE INDEX ix_interview_slots_country ON interview_slots (country, is_active);
+
+INSERT INTO interview_slots (id, country, city_key, city_name, centre, address, instructions, time_zone, start_time, end_time, capacity, is_active, created_at, updated_at)
+SELECT gen_random_uuid()::text, c.country, c.city_key, c.city_name, c.centre, c.address,
+       'Arrive 15 minutes early with your passport or work permit. Wear comfortable clothes for the practical test.',
+       c.time_zone, make_time(h.start_hour, 0, 0), make_time(h.start_hour + 1, 0, 0), 4, TRUE, LOCALTIMESTAMP(3), LOCALTIMESTAMP(3)
+FROM (
+  VALUES
+    ('Singapore', 'tampines', 'Tampines', 'UC Tampines Centre', 'Tampines Central (placeholder — business to confirm)', 'Asia/Singapore'),
+    ('Singapore', 'jurong-east', 'Jurong East', 'UC Jurong East Centre', 'Jurong Gateway Road (placeholder — business to confirm)', 'Asia/Singapore'),
+    ('Singapore', 'woodlands', 'Woodlands', 'UC Woodlands Centre', 'Woodlands Square (placeholder — business to confirm)', 'Asia/Singapore'),
+    ('Singapore', 'bedok', 'Bedok', 'UC Bedok Centre', 'New Upper Changi Road (placeholder — business to confirm)', 'Asia/Singapore'),
+    ('Singapore', 'ang-mo-kio', 'Ang Mo Kio', 'UC Ang Mo Kio Centre', 'Ang Mo Kio Avenue 3 (placeholder — business to confirm)', 'Asia/Singapore'),
+    ('Myanmar', 'yangon', 'Yangon', 'UC Yangon Centre', 'Downtown Yangon (placeholder — business to confirm)', 'Asia/Yangon'),
+    ('Myanmar', 'mandalay', 'Mandalay', 'UC Mandalay Centre', 'Central Mandalay (placeholder — business to confirm)', 'Asia/Yangon')
+) AS c (country, city_key, city_name, centre, address, time_zone)
+CROSS JOIN generate_series(8, 17) AS h (start_hour);
+
+CREATE TABLE slot_bookings (
+  id          VARCHAR(36)  NOT NULL,
+  partner_id  VARCHAR(36)  NOT NULL,
+  slot_id     VARCHAR(36)  NULL,
+  city_key    VARCHAR(32)  NOT NULL,
+  starts_at   TIMESTAMP(0) NOT NULL,
+  created_at  TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_slot_bookings PRIMARY KEY (id),
+  CONSTRAINT uk_slot_bookings_partner UNIQUE (partner_id),
+  CONSTRAINT fk_slot_bookings_partner FOREIGN KEY (partner_id) REFERENCES partners (id),
+  CONSTRAINT fk_slot_bookings_slot FOREIGN KEY (slot_id) REFERENCES interview_slots (id)
+);
+
+CREATE INDEX ix_slot_bookings_slot ON slot_bookings (city_key, starts_at);
+CREATE INDEX ix_slot_bookings_slot_id ON slot_bookings (slot_id);
+
+CREATE TABLE recruiter_aggregators (
+  id                   VARCHAR(36)  NOT NULL,
+  recruiter_id         VARCHAR(36)  NOT NULL,
+  name                 VARCHAR(160) NOT NULL,
+  is_active            BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_by_admin_id  VARCHAR(64)  NOT NULL,
+  created_at           TIMESTAMP(3) NOT NULL,
+  updated_at           TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_recruiter_aggregators PRIMARY KEY (id),
+  CONSTRAINT fk_recruiter_aggregators_recruiter FOREIGN KEY (recruiter_id) REFERENCES recruiters (id)
+);
+
+CREATE INDEX ix_recruiter_aggregators_recruiter ON recruiter_aggregators (recruiter_id, is_active);
 
 CREATE TABLE recruiter_locks (
-  id                     CHAR(36)     NOT NULL,
-  partner_id             CHAR(36)     NOT NULL,
-  locked_by              CHAR(36)     NOT NULL,
-  locked_at              DATETIME(3)  NOT NULL,
-  lock_release_at        DATETIME(3)  NOT NULL,
-  state                  ENUM('active','inactive') NOT NULL DEFAULT 'active',
-  inactive_reason        ENUM('expired','placed','released') NULL,
-  inactive_at            DATETIME(3)  NULL,
+  id                     VARCHAR(36)  NOT NULL,
+  partner_id             VARCHAR(36)  NOT NULL,
+  locked_by              VARCHAR(36)  NOT NULL,
+  origin                 VARCHAR(16)  NOT NULL DEFAULT 'recruiter',
+  assigned_by_admin_id   VARCHAR(64)  NULL,
+  locked_at              TIMESTAMP(3) NOT NULL,
+  lock_release_at        TIMESTAMP(3) NULL,
+  state                  VARCHAR(16)  NOT NULL DEFAULT 'active',
+  inactive_reason        VARCHAR(16)  NULL,
+  inactive_at            TIMESTAMP(3) NULL,
   employer_name          VARCHAR(160) NULL,
+  aggregator_id          VARCHAR(36)  NULL,
   start_date             DATE         NULL,
-  placement_recorded_at  DATETIME(3)  NULL,
-  active_partner_id      CHAR(36) GENERATED ALWAYS AS (IF(state = 'active', partner_id, NULL)) STORED,
-  created_at             DATETIME(3)  NOT NULL,
-  updated_at             DATETIME(3)  NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_locks_one_active_per_partner (active_partner_id),
-  KEY ix_locks_partner (partner_id, locked_at),
-  KEY ix_locks_recruiter (locked_by, state, locked_at),
-  KEY ix_locks_release (state, lock_release_at),
+  placement_recorded_at  TIMESTAMP(3) NULL,
+  created_at             TIMESTAMP(3) NOT NULL,
+  updated_at             TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_recruiter_locks PRIMARY KEY (id),
   CONSTRAINT fk_locks_partner FOREIGN KEY (partner_id) REFERENCES partners (id),
-  CONSTRAINT fk_locks_recruiter FOREIGN KEY (locked_by) REFERENCES recruiters (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  CONSTRAINT fk_locks_recruiter FOREIGN KEY (locked_by) REFERENCES recruiters (id),
+  CONSTRAINT fk_locks_aggregator FOREIGN KEY (aggregator_id) REFERENCES recruiter_aggregators (id),
+  CONSTRAINT ck_locks_origin CHECK (origin IN ('recruiter', 'registration', 'admin')),
+  CONSTRAINT ck_locks_state CHECK (state IN ('active', 'inactive')),
+  CONSTRAINT ck_locks_inactive_reason CHECK (inactive_reason IN ('expired', 'placed', 'released'))
+);
+
+CREATE UNIQUE INDEX uk_locks_one_active_per_partner ON recruiter_locks (partner_id) WHERE state = 'active';
+CREATE INDEX ix_locks_partner ON recruiter_locks (partner_id, locked_at);
+CREATE INDEX ix_locks_recruiter ON recruiter_locks (locked_by, state, locked_at);
+CREATE INDEX ix_locks_release ON recruiter_locks (state, lock_release_at);
 
 CREATE TABLE verification_imports (
-  id                    CHAR(36)     NOT NULL,
+  id                    VARCHAR(36)  NOT NULL,
   uploaded_by_admin_id  VARCHAR(64)  NOT NULL,
   file_name             VARCHAR(255) NOT NULL,
-  rows_total            INT UNSIGNED NOT NULL,
-  rows_accepted         INT UNSIGNED NOT NULL,
-  rows_failed           INT UNSIGNED NOT NULL,
-  created_at            DATETIME(3)  NOT NULL,
-  PRIMARY KEY (id),
-  KEY ix_imports_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  rows_total            INTEGER      NOT NULL,
+  rows_accepted         INTEGER      NOT NULL,
+  rows_rejected         INTEGER      NOT NULL DEFAULT 0,
+  rows_failed           INTEGER      NOT NULL,
+  created_at            TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_verification_imports PRIMARY KEY (id)
+);
+
+CREATE INDEX ix_imports_created ON verification_imports (created_at);
 
 CREATE TABLE verification_import_rows (
-  id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  import_id          CHAR(36)        NOT NULL,
-  row_no             INT UNSIGNED    NOT NULL,
-  primary_phone_raw  VARCHAR(32)     NOT NULL,
-  outcome            ENUM('accepted','invalid_phone','not_found','no_singapore_number','already_verified','duplicate_in_file','approval_failed') NOT NULL,
-  partner_id         CHAR(36)        NULL,
-  PRIMARY KEY (id),
-  KEY ix_import_rows_import (import_id, row_no),
-  CONSTRAINT fk_import_rows_import FOREIGN KEY (import_id) REFERENCES verification_imports (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  id                 BIGINT GENERATED BY DEFAULT AS IDENTITY,
+  import_id          VARCHAR(36) NOT NULL,
+  row_no             INTEGER     NOT NULL,
+  primary_phone_raw  VARCHAR(32) NOT NULL,
+  verified_raw       VARCHAR(16) NULL,
+  outcome            VARCHAR(24) NOT NULL,
+  partner_id         VARCHAR(36) NULL,
+  CONSTRAINT pk_verification_import_rows PRIMARY KEY (id),
+  CONSTRAINT fk_import_rows_import FOREIGN KEY (import_id) REFERENCES verification_imports (id),
+  CONSTRAINT ck_import_rows_outcome CHECK (outcome IN ('accepted', 'rejected', 'invalid_phone', 'invalid_verified', 'not_found', 'no_singapore_number', 'already_verified', 'already_failed', 'duplicate_in_file', 'approval_failed'))
+);
+
+CREATE INDEX ix_import_rows_import ON verification_import_rows (import_id, row_no);
 
 CREATE TABLE audit_logs (
-  id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  action       VARCHAR(48)     NOT NULL,
-  actor_type   ENUM('partner','admin','recruiter','system') NOT NULL,
-  actor_id     VARCHAR(64)     NULL,
-  entity_type  ENUM('partner','recruiter','import','lock','booking') NOT NULL,
-  entity_id    VARCHAR(64)     NOT NULL,
-  data         JSON            NULL,
-  request_id   VARCHAR(64)     NOT NULL,
-  created_at   DATETIME(3)     NOT NULL,
-  PRIMARY KEY (id),
-  KEY ix_audit_entity (entity_type, entity_id, created_at),
-  KEY ix_audit_actor (actor_type, actor_id, created_at),
-  KEY ix_audit_action (action, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  id           BIGINT GENERATED BY DEFAULT AS IDENTITY,
+  action       VARCHAR(48)  NOT NULL,
+  actor_type   VARCHAR(16)  NOT NULL,
+  actor_id     VARCHAR(64)  NULL,
+  entity_type  VARCHAR(16)  NOT NULL,
+  entity_id    VARCHAR(64)  NOT NULL,
+  data         JSONB        NULL,
+  request_id   VARCHAR(64)  NOT NULL,
+  created_at   TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_audit_logs PRIMARY KEY (id),
+  CONSTRAINT ck_audit_actor_type CHECK (actor_type IN ('partner', 'admin', 'recruiter', 'system')),
+  CONSTRAINT ck_audit_entity_type CHECK (entity_type IN ('partner', 'recruiter', 'admin', 'import', 'lock', 'booking', 'aggregator'))
+);
+
+CREATE INDEX ix_audit_entity ON audit_logs (entity_type, entity_id, created_at);
+CREATE INDEX ix_audit_actor ON audit_logs (actor_type, actor_id, created_at);
+CREATE INDEX ix_audit_action ON audit_logs (action, created_at);
+
+CREATE TABLE partner_notifications (
+  id          VARCHAR(36)  NOT NULL,
+  partner_id  VARCHAR(36)  NOT NULL,
+  type        VARCHAR(16)  NOT NULL,
+  data        JSONB        NULL,
+  read_at     TIMESTAMP(3) NULL,
+  created_at  TIMESTAMP(3) NOT NULL,
+  CONSTRAINT pk_partner_notifications PRIMARY KEY (id),
+  CONSTRAINT fk_partner_notifications_partner FOREIGN KEY (partner_id) REFERENCES partners (id),
+  CONSTRAINT ck_partner_notifications_type CHECK (type IN ('verified', 'placement'))
+);
+
+CREATE INDEX ix_partner_notifications_partner ON partner_notifications (partner_id, created_at);

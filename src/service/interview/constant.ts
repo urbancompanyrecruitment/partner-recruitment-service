@@ -1,12 +1,8 @@
-import type { InterviewCity } from './interface.js';
+import { SlotRowOutcome, type InterviewCentre } from './interface.js';
 
-export const SLOT_TIME_ZONE = 'Asia/Singapore';
+export const DEFAULT_SLOT_TIME_ZONE = 'Asia/Singapore';
 
 export const SLOT_WINDOW_DAYS = 2;
-
-export const SLOT_START_HOUR = 8;
-
-export const SLOT_END_HOUR = 18;
 
 export const SLOT_ID_SEPARATOR = '_';
 
@@ -14,43 +10,40 @@ export const SLOT_TIME_FORMAT = 'HH:mm';
 
 export const SLOT_DATE_FORMAT = 'YYYY-MM-DD';
 
-const DEFAULT_INSTRUCTIONS =
-  'Arrive 15 minutes early with your passport or work permit. Wear comfortable clothes for the practical test.';
+export const ALL_COUNTRIES = 'Others';
 
-export const INTERVIEW_CITIES: InterviewCity[] = [
+export const INTERVIEW_CENTRES: InterviewCentre[] = [
   {
-    key: 'tampines',
-    name: 'Tampines',
-    centre: 'UC Tampines Centre',
-    address: 'Tampines Central (placeholder — business to confirm)',
-    instructions: DEFAULT_INSTRUCTIONS,
+    key: 'singapore',
+    name: 'Singapore Interview Centre',
+    country: 'Singapore',
+    cityName: 'Singapore',
+    address: '33 Maude Road #02-01, Singapore 208344',
+    timeZone: 'Asia/Singapore',
   },
   {
-    key: 'jurong-east',
-    name: 'Jurong East',
-    centre: 'UC Jurong East Centre',
-    address: 'Jurong Gateway Road (placeholder — business to confirm)',
-    instructions: DEFAULT_INSTRUCTIONS,
-  },
-  {
-    key: 'woodlands',
-    name: 'Woodlands',
-    centre: 'UC Woodlands Centre',
-    address: 'Woodlands Square (placeholder — business to confirm)',
-    instructions: DEFAULT_INSTRUCTIONS,
-  },
-  {
-    key: 'bedok',
-    name: 'Bedok',
-    centre: 'UC Bedok Centre',
-    address: 'New Upper Changi Road (placeholder — business to confirm)',
-    instructions: DEFAULT_INSTRUCTIONS,
-  },
-  {
-    key: 'ang-mo-kio',
-    name: 'Ang Mo Kio',
-    centre: 'UC Ang Mo Kio Centre',
-    address: 'Ang Mo Kio Avenue 3 (placeholder — business to confirm)',
-    instructions: DEFAULT_INSTRUCTIONS,
+    key: 'yangon',
+    name: 'Yangon Interview Centre',
+    country: 'Myanmar',
+    cityName: 'Yangon',
+    address: 'Ye Tagon Tower (Pang Hlaing Tower), Pann Hlaing St, Yangon, Myanmar',
+    timeZone: 'Asia/Yangon',
   },
 ];
+
+export const SLOT_INSTRUCTIONS =
+  'Arrive 15 minutes early with your passport or work permit. Wear comfortable clothes for the practical test.';
+
+export const SLOT_UPLOAD_TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
+export const SLOT_CAPACITY_PATTERN = /^\d{1,4}$/;
+
+export const MAX_SLOT_CAPACITY = 200;
+
+export const MAX_SLOT_IMPORT_ROWS = 200;
+
+export const SLOT_FILE_NAME_MAX_LENGTH = 255;
+
+export const SLOT_UPLOAD_VALUE_MAX_LENGTH = 64;
+
+export const SAVED_SLOT_OUTCOMES: SlotRowOutcome[] = [SlotRowOutcome.Created, SlotRowOutcome.Updated];

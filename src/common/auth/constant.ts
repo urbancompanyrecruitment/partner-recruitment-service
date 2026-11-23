@@ -20,6 +20,10 @@ export const JWT_ALGORITHM = 'HS256';
 
 export const COOKIE_PATH = '/';
 
+export const PASSWORD_MIN_LENGTH = 8;
+
+export const PASSWORD_MAX_LENGTH = 128;
+
 export const LOGIN_MAX_FAILURES = 10;
 
 export const LOGIN_LOCKOUT_MINUTES = 15;

@@ -1,0 +1,1 @@
+CREATE DATABASE partner_recruitment_test OWNER recruitment;
