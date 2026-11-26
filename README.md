@@ -193,6 +193,8 @@ The service runs on Vercel as one function: Vercel detects Fastify from `src/ind
 
 Rate limits are counted per running copy (in memory), so they are looser than on a single server.
 
+**Row level security.** Supabase publishes every table of the `public` schema through its own REST API to anyone holding the project's public key, unless row level security is on. Migration `0003` turns it on for every table and no policy is defined, so that API can read and write nothing. The service is unaffected because it connects as the role that owns the tables. Every new table must enable it in the migration that creates it (a test fails otherwise). A non-owner application role, as in the RDS checklist, would need policies or `BYPASSRLS`.
+
 ## Environment variables
 
 See `.env.example`. `DATABASE_POOL_MAX` (default 10) is the pool size of each running copy. `DATABASE_CA_CERT` is the PEM certificate of the database's certificate authority; empty = TLS is governed by `DATABASE_URL` alone. `CRON_SECRET` protects the scheduled clean-up endpoint; empty = the endpoint refuses every call. `COOKIE_SECURE=true` in any environment served over https. `SIGNUP_SHEET_WEBHOOK_URL` empty = no sign-up sheet. `OPS_LEAD_UPLOAD_CATEGORY_KEY` is the Urban Company provider category written into the ops lead upload file; empty = that download is refused. `OPS_LEAD_UPLOAD_CITY_KEY` (default `city_singapore_v2`), `OPS_LEAD_UPLOAD_SOURCE_TYPE` (`third_party` or `offline_activity`) and `OPS_LEAD_UPLOAD_EXPERIMENT_NAME` (lowercase letters, digits and underscores) fill the other fixed columns.

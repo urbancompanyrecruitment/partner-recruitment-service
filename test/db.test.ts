@@ -31,6 +31,15 @@ describe('database layer on Postgres', () => {
     expect(poolConfig.max).toBe(config.databasePoolMax);
   });
 
+  it('keeps row level security on for every table, so only the owning role can reach the data', async () => {
+    const unprotected = await query<{ name: string }>(
+      pool,
+      "SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity",
+    );
+
+    expect(unprotected).toEqual([]);
+  });
+
   it('runs every session in UTC whatever the server default is', async () => {
     const row = await queryOne<{ zone: string }>(pool, "SELECT current_setting('TimeZone') AS zone");
 
