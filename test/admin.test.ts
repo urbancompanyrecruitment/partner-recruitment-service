@@ -1,4 +1,4 @@
-import type { App } from '../src/app.js';
+import type { App } from '../src/buildApp.js';
 import { config } from '../src/common/config/index.js';
 import { pool, query } from '../src/common/db/index.js';
 import { AdminRole } from '../src/service/admin/index.js';

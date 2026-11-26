@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  DEFAULT_DATABASE_POOL_MAX,
   DEFAULT_LOCK_TTL_HOURS,
   DEFAULT_LOG_LEVEL,
   DEFAULT_ONBOARDING_CATEGORY_KEY,
@@ -11,7 +12,10 @@ import {
   DEFAULT_OPS_LEAD_UPLOAD_SOURCE_TYPE,
   DEFAULT_PORT,
   ENCRYPTION_KEY_HEX_LENGTH,
+  ESCAPED_NEWLINE,
+  MIN_CRON_SECRET_LENGTH,
   MIN_SECRET_LENGTH,
+  NEWLINE,
   OPS_LEAD_UPLOAD_EXPERIMENT_NAME_PATTERN,
   OPS_LEAD_UPLOAD_SOURCE_TYPES,
 } from './constant.js';
@@ -27,6 +31,9 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().positive().default(DEFAULT_PORT),
   LOG_LEVEL: z.string().default(DEFAULT_LOG_LEVEL),
   DATABASE_URL: z.string().min(1),
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().default(DEFAULT_DATABASE_POOL_MAX),
+  DATABASE_CA_CERT: optionalString.transform(value => value?.replaceAll(ESCAPED_NEWLINE, NEWLINE)),
+  CRON_SECRET: optionalString.pipe(z.string().min(MIN_CRON_SECRET_LENGTH).optional()),
   SESSION_SECRET: z.string().min(MIN_SECRET_LENGTH),
   PHONE_ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]+$/i).length(ENCRYPTION_KEY_HEX_LENGTH),
   PHONE_CHECKSUM_KEY: z.string().min(MIN_SECRET_LENGTH),
@@ -59,6 +66,9 @@ export const loadConfig = (environment: NodeJS.ProcessEnv): Config => {
     port: parsed.PORT,
     logLevel: parsed.LOG_LEVEL,
     databaseUrl: parsed.DATABASE_URL,
+    databasePoolMax: parsed.DATABASE_POOL_MAX,
+    databaseCaCert: parsed.DATABASE_CA_CERT,
+    cronSecret: parsed.CRON_SECRET,
     sessionSecret: parsed.SESSION_SECRET,
     phoneEncryptionKey: Buffer.from(parsed.PHONE_ENCRYPTION_KEY, 'hex'),
     phoneChecksumKey: parsed.PHONE_CHECKSUM_KEY,

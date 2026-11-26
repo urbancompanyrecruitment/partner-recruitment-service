@@ -1,4 +1,4 @@
-export const POOL_CONNECTION_LIMIT = 10;
+export const SSL_URL_PARAMS = ['sslmode', 'ssl'];
 
 export const MIGRATIONS_DIRECTORY = 'migrations';
 

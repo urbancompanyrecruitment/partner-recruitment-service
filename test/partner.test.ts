@@ -1,4 +1,4 @@
-import type { App } from '../src/app.js';
+import type { App } from '../src/buildApp.js';
 import { execute, query, pool } from '../src/common/db/index.js';
 import { LOGIN_MAX_FAILURES } from '../src/common/auth/constant.js';
 import {

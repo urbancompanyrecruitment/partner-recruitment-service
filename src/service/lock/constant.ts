@@ -1,3 +1,7 @@
+export const CRON_PATH = { deactivateExpiredLocks: '/cron/deactivate-expired-locks' };
+
+export const BEARER_PREFIX = 'Bearer ';
+
 export const LOCK_SELECT = 'SELECT * FROM recruiter_locks';
 
 export const NOT_RELEASED_SQL = '(lock_release_at IS NULL OR lock_release_at > LOCALTIMESTAMP(3))';

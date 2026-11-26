@@ -1,8 +1,8 @@
-import pg, { type QueryResultRow } from 'pg';
+import pg, { type PoolConfig, type QueryResultRow } from 'pg';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import { dayjs, DB_DATE_TIME_FORMAT } from '../time.js';
-import { FRACTION_DIGITS, FRACTION_SEPARATOR, PLACEHOLDER, POOL_CONNECTION_LIMIT, SESSION_OPTIONS } from './constant.js';
+import { FRACTION_DIGITS, FRACTION_SEPARATOR, PLACEHOLDER, SESSION_OPTIONS, SSL_URL_PARAMS } from './constant.js';
 import type { CountRow, DbConnection, ExecuteResult, Queryable } from './interface.js';
 
 pg.types.setTypeParser(pg.types.builtins.INT8, Number);
@@ -15,8 +15,20 @@ pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, value => {
   return fraction ? `${wallClock}${FRACTION_SEPARATOR}${fraction.padEnd(FRACTION_DIGITS, '0')}` : value;
 });
 
+export const toPoolConfig = (databaseUrl: string, caCert = config.databaseCaCert): PoolConfig => {
+  const shared = { max: config.databasePoolMax, options: SESSION_OPTIONS };
+
+  if (!caCert) return { ...shared, connectionString: databaseUrl };
+
+  const url = new URL(databaseUrl);
+
+  SSL_URL_PARAMS.forEach(param => url.searchParams.delete(param));
+
+  return { ...shared, connectionString: url.toString(), ssl: { ca: caCert } };
+};
+
 export const createPool = (databaseUrl: string) => {
-  const created = new pg.Pool({ connectionString: databaseUrl, max: POOL_CONNECTION_LIMIT, options: SESSION_OPTIONS });
+  const created = new pg.Pool(toPoolConfig(databaseUrl));
 
   created.on('error', error => {
     logger.error({ method: 'createPool', message: 'Idle database connection failed', error: error?.message || error?.stack });

@@ -1,4 +1,4 @@
-import type { App } from '../src/app.js';
+import type { App } from '../src/buildApp.js';
 import { execute, pool, query } from '../src/common/db/index.js';
 import { INTERVIEW_CENTRES, type SlotDefinitionRow } from '../src/service/interview/index.js';
 import { api, closeDatabase, createAdminAccount, createApp, createRecruiterAccount, prepareDatabase, resetDatabase } from './helpers.js';

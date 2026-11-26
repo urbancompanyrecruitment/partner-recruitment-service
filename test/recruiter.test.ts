@@ -1,4 +1,4 @@
-import type { App } from '../src/app.js';
+import type { App } from '../src/buildApp.js';
 import { execute, pool, query } from '../src/common/db/index.js';
 import { deactivateExpiredLocks } from '../src/service/lock/index.js';
 import {

@@ -1,4 +1,5 @@
-import { count, execute, pool, query, queryOne } from '../src/common/db/index.js';
+import { config } from '../src/common/config/index.js';
+import { count, execute, pool, query, queryOne, toPoolConfig } from '../src/common/db/index.js';
 import { AppError, ErrorCode } from '../src/common/errors/index.js';
 import { withCriticalSection } from '../src/common/lock/index.js';
 import { closeDatabase, prepareDatabase } from './helpers.js';
@@ -14,6 +15,20 @@ describe('database layer on Postgres', () => {
 
   afterAll(async () => {
     await closeDatabase();
+  });
+
+  it('connects with the URL as given when no CA certificate is configured', () => {
+    const url = 'postgres://app:secret@db.internal:5432/recruitment?sslmode=require';
+
+    expect(toPoolConfig(url)).toEqual({ connectionString: url, max: config.databasePoolMax, options: '-c TimeZone=UTC' });
+  });
+
+  it('verifies the server against the configured CA certificate and drops the SSL flags from the URL', () => {
+    const poolConfig = toPoolConfig('postgres://app.ref:p%40ss@pooler.internal:5432/postgres?sslmode=require&ssl=true&application_name=portal', 'PEM');
+
+    expect(poolConfig.connectionString).toBe('postgres://app.ref:p%40ss@pooler.internal:5432/postgres?application_name=portal');
+    expect(poolConfig.ssl).toEqual({ ca: 'PEM' });
+    expect(poolConfig.max).toBe(config.databasePoolMax);
   });
 
   it('runs every session in UTC whatever the server default is', async () => {

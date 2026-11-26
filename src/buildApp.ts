@@ -11,7 +11,7 @@ import type { Actor } from './common/auth/index.js';
 import { logger } from './common/logger.js';
 import { adminAccountRoutes, adminAuthRoutes, adminRoutes } from './service/admin/index.js';
 import { interviewRoutes } from './service/interview/routes.js';
-import { lockRoutes } from './service/lock/index.js';
+import { lockCronRoutes, lockRoutes } from './service/lock/index.js';
 import { notificationRoutes } from './service/notification/index.js';
 import { partnerRoutes } from './service/partner/index.js';
 import { recruiterRoutes } from './service/recruiter/index.js';
@@ -62,6 +62,8 @@ export const buildApp = async () => {
       await api.register(recruiterRoutes);
 
       await api.register(lockRoutes);
+
+      await api.register(lockCronRoutes);
 
       await api.register(adminAuthRoutes);
 

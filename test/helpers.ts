@@ -1,5 +1,5 @@
 import type { InjectOptions, LightMyRequestResponse } from 'fastify';
-import { buildApp, type App } from '../src/app.js';
+import { buildApp, type App } from '../src/buildApp.js';
 import { runMigrations } from '../src/common/db/migrate.js';
 import { execute, pool } from '../src/common/db/index.js';
 import { config } from '../src/common/config/index.js';

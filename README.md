@@ -96,7 +96,7 @@ migrations/            one SQL file per schema change, applied in name order and
 scripts/local-db.sql   local database + user
 scripts/google-sheet-webhook.gs   Apps Script that receives sign-up rows in the Google Sheet
 src/
-  app.ts               Fastify instance: cookies, rate limits, error envelope, routes under /api
+  buildApp.ts          Fastify instance: cookies, rate limits, error envelope, routes under /api
   common/
     config/            env parsing (zod) → typed config
     db/                pg pool (UTC session), query helpers, transactions, migration runner
@@ -173,11 +173,26 @@ Target: **Amazon RDS for PostgreSQL 17** (the schema and the SQL use nothing new
 4. **Secrets.** `DATABASE_URL`, `SESSION_SECRET`, `PHONE_ENCRYPTION_KEY`, `PHONE_CHECKSUM_KEY`, `SIGNUP_SHEET_WEBHOOK_URL`, `SIGNUP_SHEET_WEBHOOK_SECRET` come from AWS Secrets Manager into the task's environment. Rotating `PHONE_ENCRYPTION_KEY` requires re-encrypting the phone columns; the checksum key must never change (it is the lookup key).
 5. **Migrations.** `npm run migrate` is a release step that runs **before** the new task definition goes live (a one-off ECS task or a CI job with the DDL credentials). Each migration file runs in one transaction, so a failed file leaves nothing behind; never rewrite an applied file. The runner takes an advisory lock, so two deploys cannot migrate at once.
 6. **Backups.** Automated backups with 7–35 days of point-in-time recovery; a manual snapshot before any migration that touches existing rows.
-7. **Observability.** Enhanced Monitoring + Performance Insights; alarms on CPU, free storage, connections and replica lag if a read replica is added. Pool size per task is 10 (`POOL_CONNECTION_LIMIT`); keep `max_connections` ≥ tasks × 10 + headroom (each critical section holds one connection for its whole request).
+7. **Observability.** Enhanced Monitoring + Performance Insights; alarms on CPU, free storage, connections and replica lag if a read replica is added. Pool size per task is 10 (`DATABASE_POOL_MAX`); keep `max_connections` ≥ tasks × 10 + headroom (each critical section holds one connection for its whole request).
 8. **Daily job.** Schedule `npm run workflow:deactivate-expired-locks` (EventBridge → ECS scheduled task) once a day. It is idempotent and needs no lock. `npm run sheet:sync` can run on the same schedule to deliver sign-up rows the sheet missed.
 9. **First admin.** After the first migration, run `npm run admin:create -- <email> "<name>" super_admin` as a one-off task and hand the temporary password to that person.
 10. **Local parity.** `docker-compose.yml` runs the same Postgres 17 image, so a schema that works locally works on RDS.
 
+## Deploying on Vercel with Supabase
+
+The service runs on Vercel as one function: Vercel detects Fastify from `src/index.ts` (the only entry-point name under `src/`; the app builder lives in `src/buildApp.ts` so it is not picked instead). Nothing changes locally.
+
+1. **Database URL.** Use the Supabase **session pooler** connection string (`...pooler.supabase.com:5432`). The transaction pooler (port 6543) breaks the advisory locks (see Critical sections), and the direct `db.<ref>.supabase.co` host is IPv6 only, which Vercel cannot reach.
+2. **Certificate.** Paste the Supabase CA certificate (Database settings > SSL configuration) into `DATABASE_CA_CERT`. The service then verifies the server against it and ignores any `sslmode` in the URL.
+3. **Pool.** `DATABASE_POOL_MAX=3`. Each running copy of the function opens its own pool and the session pooler caps the total number of clients, so keep this small. Not 1: a critical section holds one connection while its work may need another.
+4. **Other variables.** `NODE_ENV=production`, `COOKIE_SECURE=true`, fresh `SESSION_SECRET`, `PHONE_ENCRYPTION_KEY`, `PHONE_CHECKSUM_KEY`, and `CRON_SECRET`.
+5. **Schema and first admin.** Run `npm run migrate` and `npm run admin:create` from a laptop with `DATABASE_URL` (and `DATABASE_CA_CERT`) pointing at Supabase. Deployments do not migrate.
+6. **Scheduled clean-up.** `vercel.json` asks Vercel Cron to call `GET /api/cron/deactivate-expired-locks` every hour (UTC, production deployment only). Vercel sends `Authorization: Bearer <CRON_SECRET>`; the endpoint answers 401 to anything else, and to everything while `CRON_SECRET` is empty.
+7. **Region.** Set the function region (Project > Settings > Functions) to the region of the Supabase database.
+8. **Same origin.** The portal project forwards `/api/*` to this project (its `vercel.json`), so the browser only ever talks to the portal's address and the session cookies stay first-party.
+
+Rate limits are counted per running copy (in memory), so they are looser than on a single server.
+
 ## Environment variables
 
-See `.env.example`. `ONBOARDING_BASE_URL` empty = stub lead creation and approval (local default); set it, `ONBOARDING_CLIENT_ID` and the category / city / source values to call `provider-onboarding-service` for real. `COOKIE_SECURE=true` in any environment served over https. `SIGNUP_SHEET_WEBHOOK_URL` empty = no sign-up sheet. `OPS_LEAD_UPLOAD_CATEGORY_KEY` is the Urban Company provider category written into the ops lead upload file; empty = that download is refused. `OPS_LEAD_UPLOAD_CITY_KEY` (default `city_singapore_v2`), `OPS_LEAD_UPLOAD_SOURCE_TYPE` (`third_party` or `offline_activity`) and `OPS_LEAD_UPLOAD_EXPERIMENT_NAME` (lowercase letters, digits and underscores) fill the other fixed columns.
+See `.env.example`. `DATABASE_POOL_MAX` (default 10) is the pool size of each running copy. `DATABASE_CA_CERT` is the PEM certificate of the database's certificate authority; empty = TLS is governed by `DATABASE_URL` alone. `CRON_SECRET` protects the scheduled clean-up endpoint; empty = the endpoint refuses every call. `ONBOARDING_BASE_URL` empty = stub lead creation and approval (local default); set it, `ONBOARDING_CLIENT_ID` and the category / city / source values to call `provider-onboarding-service` for real. `COOKIE_SECURE=true` in any environment served over https. `SIGNUP_SHEET_WEBHOOK_URL` empty = no sign-up sheet. `OPS_LEAD_UPLOAD_CATEGORY_KEY` is the Urban Company provider category written into the ops lead upload file; empty = that download is refused. `OPS_LEAD_UPLOAD_CITY_KEY` (default `city_singapore_v2`), `OPS_LEAD_UPLOAD_SOURCE_TYPE` (`third_party` or `offline_activity`) and `OPS_LEAD_UPLOAD_EXPERIMENT_NAME` (lowercase letters, digits and underscores) fill the other fixed columns.

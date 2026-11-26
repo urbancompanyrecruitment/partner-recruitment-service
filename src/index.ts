@@ -1,4 +1,4 @@
-import { buildApp } from './app.js';
+import { buildApp } from './buildApp.js';
 import { config } from './common/config/index.js';
 import { logger } from './common/logger.js';
 import { LISTEN_HOST } from './constant.js';

@@ -29,6 +29,9 @@ export interface Config {
   port: number;
   logLevel: string;
   databaseUrl: string;
+  databasePoolMax: number;
+  databaseCaCert?: string;
+  cronSecret?: string;
   sessionSecret: string;
   phoneEncryptionKey: Buffer;
   phoneChecksumKey: string;

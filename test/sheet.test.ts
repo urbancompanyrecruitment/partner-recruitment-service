@@ -7,7 +7,7 @@ const SHEET = vi.hoisted(() => {
   return webhook;
 });
 
-import type { App } from '../src/app.js';
+import type { App } from '../src/buildApp.js';
 import { pool, query } from '../src/common/db/index.js';
 import { SHEET_HEADERS } from '../src/service/partner/constant.js';
 import { syncPendingPartnersToSheet } from '../src/service/partner/index.js';
