@@ -23,7 +23,6 @@ export enum ErrorCode {
   UnknownAggregator = 'UNKNOWN_AGGREGATOR',
   AggregatorAlreadyExists = 'AGGREGATOR_ALREADY_EXISTS',
   InvalidTransition = 'INVALID_TRANSITION',
-  LeadCreationFailed = 'LEAD_CREATION_FAILED',
   RecruiterSuspended = 'RECRUITER_SUSPENDED',
   RecruiterPendingApproval = 'RECRUITER_PENDING_APPROVAL',
   RecruiterRejected = 'RECRUITER_REJECTED',

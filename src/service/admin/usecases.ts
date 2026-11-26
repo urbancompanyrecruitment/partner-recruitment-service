@@ -124,7 +124,7 @@ export const setSingaporePhone = (partnerId: string, raw: string, adminId: strin
       requestId,
     });
 
-    await syncLead(connection, partner, singaporePhone, actor, requestId);
+    await syncLead(connection, partner, actor, requestId);
 
     const withLead = await requirePartnerRow(connection, partnerId);
 

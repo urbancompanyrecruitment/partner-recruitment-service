@@ -108,7 +108,7 @@ export const signUp = async (input: SignUpInput, registrar: Actor | undefined, r
     const created = await requirePartnerRow(connection, partnerId);
 
     if (singaporePhone) {
-      await syncLead(connection, created, singaporePhone, actor, requestId).catch((error: Error) => {
+      await syncLead(connection, created, actor, requestId).catch((error: Error) => {
         logger.error({ method: 'signUp', partnerId, message: 'Lead creation failed at sign-up', error: error?.message || error?.stack });
       });
     }

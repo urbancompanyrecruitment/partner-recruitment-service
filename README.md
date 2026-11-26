@@ -103,7 +103,7 @@ src/
     lock/              withCriticalSection(keys, work): Postgres advisory locks on one pooled connection
     crypto/            AES-256-GCM phone encryption + HMAC checksum, argon2id passwords
     auth/              JWT cookie sessions, login lockout rules
-    clients/           provider-onboarding-service (stubbed when ONBOARDING_BASE_URL is empty), sign-up sheet webhook
+    clients/           sign-up sheet webhook
   service/
     interview/         cities and slots from interview_slots, bookings
     partner/           sign-up (by the partner or by a recruiter), last-name login, status, reschedule, state machine, lead sync and approval, sheet sync
@@ -155,7 +155,7 @@ The key or the centre name is accepted, in any letter case. A row with any other
 
 ### Partner and recruiter states
 
-Partner: `signed_up` → `verified` → `placed` → `joined`, or `signed_up` → `verification_failed` (terminal: no lead approval, no Singapore-number change, no hub, never shown to recruiters). Verification no longer needs a Singapore number: the lead in provider-onboarding-service is approved at verification when it exists, otherwise when the Singapore number is added later.
+Partner: `signed_up` → `verified` → `placed` → `joined`, or `signed_up` → `verification_failed` (terminal: no lead approval, no Singapore-number change, no hub, never shown to recruiters). Verification no longer needs a Singapore number: the partner's lead record (a local reference only; the service calls no Urban Company system) is approved at verification when it exists, otherwise when the Singapore number is added later.
 
 Recruiter: self sign-up creates `pending`; an admin moves it to `active` or `rejected`; `active` ⇄ `suspended`; `rejected` → `active`. Accounts created by an admin start `active`. A pending recruiter can sign in and change their password but every other recruiter route answers `RECRUITER_PENDING_APPROVAL`; suspended and rejected recruiters cannot sign in.
 
@@ -195,4 +195,4 @@ Rate limits are counted per running copy (in memory), so they are looser than on
 
 ## Environment variables
 
-See `.env.example`. `DATABASE_POOL_MAX` (default 10) is the pool size of each running copy. `DATABASE_CA_CERT` is the PEM certificate of the database's certificate authority; empty = TLS is governed by `DATABASE_URL` alone. `CRON_SECRET` protects the scheduled clean-up endpoint; empty = the endpoint refuses every call. `ONBOARDING_BASE_URL` empty = stub lead creation and approval (local default); set it, `ONBOARDING_CLIENT_ID` and the category / city / source values to call `provider-onboarding-service` for real. `COOKIE_SECURE=true` in any environment served over https. `SIGNUP_SHEET_WEBHOOK_URL` empty = no sign-up sheet. `OPS_LEAD_UPLOAD_CATEGORY_KEY` is the Urban Company provider category written into the ops lead upload file; empty = that download is refused. `OPS_LEAD_UPLOAD_CITY_KEY` (default `city_singapore_v2`), `OPS_LEAD_UPLOAD_SOURCE_TYPE` (`third_party` or `offline_activity`) and `OPS_LEAD_UPLOAD_EXPERIMENT_NAME` (lowercase letters, digits and underscores) fill the other fixed columns.
+See `.env.example`. `DATABASE_POOL_MAX` (default 10) is the pool size of each running copy. `DATABASE_CA_CERT` is the PEM certificate of the database's certificate authority; empty = TLS is governed by `DATABASE_URL` alone. `CRON_SECRET` protects the scheduled clean-up endpoint; empty = the endpoint refuses every call. `COOKIE_SECURE=true` in any environment served over https. `SIGNUP_SHEET_WEBHOOK_URL` empty = no sign-up sheet. `OPS_LEAD_UPLOAD_CATEGORY_KEY` is the Urban Company provider category written into the ops lead upload file; empty = that download is refused. `OPS_LEAD_UPLOAD_CITY_KEY` (default `city_singapore_v2`), `OPS_LEAD_UPLOAD_SOURCE_TYPE` (`third_party` or `offline_activity`) and `OPS_LEAD_UPLOAD_EXPERIMENT_NAME` (lowercase letters, digits and underscores) fill the other fixed columns.

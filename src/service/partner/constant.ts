@@ -91,3 +91,9 @@ export const SEARCH_WILDCARD = '%';
 export const SIGN_UP_RATE_LIMIT = { max: 5, timeWindow: '10 minutes' };
 
 export const LOGIN_RATE_LIMIT = { max: 10, timeWindow: '10 minutes' };
+
+export const LEAD_ID_PREFIX = 'lead-';
+
+export const JOURNEY_ID_PREFIX = 'journey-';
+
+export const LEAD_ID_SUFFIX_LENGTH = 8;

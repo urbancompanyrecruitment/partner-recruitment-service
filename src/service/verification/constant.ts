@@ -26,5 +26,5 @@ export const IMPORT_OUTCOME_REASON: Record<ImportRowOutcome, string> = {
   [ImportRowOutcome.AlreadyVerified]: 'Already verified',
   [ImportRowOutcome.AlreadyFailed]: 'Already marked as verification failed',
   [ImportRowOutcome.DuplicateInFile]: 'Duplicate row in file',
-  [ImportRowOutcome.ApprovalFailed]: 'Approval in provider-onboarding-service failed',
+  [ImportRowOutcome.ApprovalFailed]: 'Lead approval failed',
 };

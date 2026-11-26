@@ -4,14 +4,6 @@ export enum NodeEnvironment {
   Production = 'production',
 }
 
-export interface OnboardingConfig {
-  baseUrl?: string;
-  clientId: string;
-  categoryKey: string;
-  cityKey: string;
-  sourceType: string;
-}
-
 export interface OpsLeadUploadConfig {
   cityKey: string;
   categoryKey?: string;
@@ -36,7 +28,6 @@ export interface Config {
   phoneEncryptionKey: Buffer;
   phoneChecksumKey: string;
   cookieSecure: boolean;
-  onboarding: OnboardingConfig;
   signupSheet: SignupSheetConfig;
   opsLeadUpload: OpsLeadUploadConfig;
   lockTtlHours: number;

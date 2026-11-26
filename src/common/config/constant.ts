@@ -8,14 +8,6 @@ export const MIN_CRON_SECRET_LENGTH = 16;
 
 export const ENCRYPTION_KEY_HEX_LENGTH = 64;
 
-export const DEFAULT_ONBOARDING_CLIENT_ID = 'partner-recruitment-service';
-
-export const DEFAULT_ONBOARDING_CATEGORY_KEY = 'cleaning';
-
-export const DEFAULT_ONBOARDING_CITY_KEY = 'singapore';
-
-export const DEFAULT_ONBOARDING_SOURCE_TYPE = 'recruitment_portal';
-
 export const DEFAULT_LOCK_TTL_HOURS = 72;
 
 export const DEFAULT_DATABASE_POOL_MAX = 10;

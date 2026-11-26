@@ -3,10 +3,6 @@ import {
   DEFAULT_DATABASE_POOL_MAX,
   DEFAULT_LOCK_TTL_HOURS,
   DEFAULT_LOG_LEVEL,
-  DEFAULT_ONBOARDING_CATEGORY_KEY,
-  DEFAULT_ONBOARDING_CITY_KEY,
-  DEFAULT_ONBOARDING_CLIENT_ID,
-  DEFAULT_ONBOARDING_SOURCE_TYPE,
   DEFAULT_OPS_LEAD_UPLOAD_CITY_KEY,
   DEFAULT_OPS_LEAD_UPLOAD_EXPERIMENT_NAME,
   DEFAULT_OPS_LEAD_UPLOAD_SOURCE_TYPE,
@@ -41,11 +37,6 @@ const environmentSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(value => value === 'true'),
-  ONBOARDING_BASE_URL: optionalString,
-  ONBOARDING_CLIENT_ID: z.string().default(DEFAULT_ONBOARDING_CLIENT_ID),
-  ONBOARDING_CATEGORY_KEY: z.string().default(DEFAULT_ONBOARDING_CATEGORY_KEY),
-  ONBOARDING_CITY_KEY: z.string().default(DEFAULT_ONBOARDING_CITY_KEY),
-  ONBOARDING_SOURCE_TYPE: z.string().default(DEFAULT_ONBOARDING_SOURCE_TYPE),
   SIGNUP_SHEET_WEBHOOK_URL: optionalString,
   SIGNUP_SHEET_WEBHOOK_SECRET: optionalString,
   OPS_LEAD_UPLOAD_CITY_KEY: z.string().min(1).default(DEFAULT_OPS_LEAD_UPLOAD_CITY_KEY),
@@ -73,13 +64,6 @@ export const loadConfig = (environment: NodeJS.ProcessEnv): Config => {
     phoneEncryptionKey: Buffer.from(parsed.PHONE_ENCRYPTION_KEY, 'hex'),
     phoneChecksumKey: parsed.PHONE_CHECKSUM_KEY,
     cookieSecure: parsed.COOKIE_SECURE,
-    onboarding: {
-      baseUrl: parsed.ONBOARDING_BASE_URL,
-      clientId: parsed.ONBOARDING_CLIENT_ID,
-      categoryKey: parsed.ONBOARDING_CATEGORY_KEY,
-      cityKey: parsed.ONBOARDING_CITY_KEY,
-      sourceType: parsed.ONBOARDING_SOURCE_TYPE,
-    },
     signupSheet: { webhookUrl: parsed.SIGNUP_SHEET_WEBHOOK_URL, secret: parsed.SIGNUP_SHEET_WEBHOOK_SECRET },
     opsLeadUpload: {
       cityKey: parsed.OPS_LEAD_UPLOAD_CITY_KEY,
