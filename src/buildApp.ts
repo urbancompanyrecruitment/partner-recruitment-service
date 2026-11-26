@@ -22,8 +22,9 @@ const toValidationError = (error: ZodError): AppError =>
     issues: error.issues.map(issue => ({ path: issue.path.join('.'), message: issue.message })),
   });
 
-export const buildApp = async () => {
-  const app = Fastify({ loggerInstance: logger, genReqId: () => randomUUID(), trustProxy: true });
+export const fastifyOptions = () => ({ loggerInstance: logger, genReqId: () => randomUUID(), trustProxy: true });
+
+export const buildApp = async (app = Fastify(fastifyOptions())) => {
 
   app.decorateRequest('actor', null as unknown as Actor);
 

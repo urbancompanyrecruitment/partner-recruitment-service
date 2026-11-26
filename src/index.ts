@@ -1,9 +1,10 @@
-import { buildApp } from './buildApp.js';
+import Fastify from 'fastify';
+import { buildApp, fastifyOptions } from './buildApp.js';
 import { config } from './common/config/index.js';
 import { logger } from './common/logger.js';
 import { LISTEN_HOST } from './constant.js';
 
-const app = await buildApp();
+const app = await buildApp(Fastify(fastifyOptions()));
 
 await app.listen({ port: config.port, host: LISTEN_HOST });
 

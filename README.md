@@ -180,7 +180,7 @@ Target: **Amazon RDS for PostgreSQL 17** (the schema and the SQL use nothing new
 
 ## Deploying on Vercel with Supabase
 
-The service runs on Vercel as one function: Vercel detects Fastify from `src/index.ts` (the only entry-point name under `src/`; the app builder lives in `src/buildApp.ts` so it is not picked instead). Nothing changes locally.
+The service runs on Vercel as one function: Vercel detects Fastify from `src/index.ts`: it is the only entry-point name under `src/`, and it must import `fastify` itself, which is why it creates the instance and hands it to the builder in `src/buildApp.ts`. In the project settings the application preset is **Fastify** (Vercel suggests Container because of the Dockerfile). Nothing changes locally.
 
 1. **Database URL.** Use the Supabase **session pooler** connection string (`...pooler.supabase.com:5432`). The transaction pooler (port 6543) breaks the advisory locks (see Critical sections), and the direct `db.<ref>.supabase.co` host is IPv6 only, which Vercel cannot reach.
 2. **Certificate.** Paste the Supabase CA certificate (Database settings > SSL configuration) into `DATABASE_CA_CERT`. The service then verifies the server against it and ignores any `sslmode` in the URL.
