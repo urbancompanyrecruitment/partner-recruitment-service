@@ -28,7 +28,7 @@ export enum ErrorCode {
   RecruiterRejected = 'RECRUITER_REJECTED',
   RecruiterNotActive = 'RECRUITER_NOT_ACTIVE',
   AdminSuspended = 'ADMIN_SUSPENDED',
-  OpsUploadNotConfigured = 'OPS_UPLOAD_NOT_CONFIGURED',
+  ResetLinkInvalid = 'RESET_LINK_INVALID',
   RequestRejected = 'REQUEST_REJECTED',
   InternalError = 'INTERNAL_ERROR',
 }

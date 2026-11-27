@@ -46,6 +46,8 @@ export enum AuditAction {
   AdminStatusChanged = 'admin.status_changed',
   AdminPasswordChanged = 'admin.password_changed',
   AdminPasswordReset = 'admin.password_reset',
+  PasswordResetRequested = 'password_reset.requested',
+  PasswordResetCompleted = 'password_reset.completed',
 }
 
 export interface AuditEntry {

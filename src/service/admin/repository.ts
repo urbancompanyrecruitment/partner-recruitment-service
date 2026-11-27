@@ -24,7 +24,9 @@ export const updateAdminStatus = (db: Queryable, id: string, status: AdminStatus
 export const updateAdminPasswordHash = (db: Queryable, id: string, passwordHash: string): Promise<ExecuteResult> =>
   execute(
     db,
-    'UPDATE admins SET password_hash = ?, failed_login_count = 0, login_locked_until = NULL, updated_at = LOCALTIMESTAMP(3) WHERE id = ?',
+    `UPDATE admins
+     SET password_hash = ?, failed_login_count = 0, login_locked_until = NULL, session_version = session_version + 1, updated_at = LOCALTIMESTAMP(3)
+     WHERE id = ?`,
     [passwordHash, id],
   );
 

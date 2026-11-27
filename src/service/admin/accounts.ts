@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto';
 import type { ChangePasswordInput, TemporaryPasswordResult } from '../../common/auth/index.js';
 import { assertNotLocked, nextLoginFailure } from '../../common/auth/lockout.js';
 import { generateTemporaryPassword, hashPassword, verifyPassword } from '../../common/crypto/password.js';
-import { pool, type Queryable } from '../../common/db/index.js';
+import { pool, withTransaction, type Queryable } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { lockKey, withCriticalSection } from '../../common/lock/index.js';
 import { logger } from '../../common/logger.js';
 import { toIsoDateTime, toOptionalIsoDateTime } from '../../common/time.js';
 import { ActorType, AuditAction, AuditEntityType, recordAudit } from '../audit/index.js';
+import { PasswordResetAccountType } from '../passwordReset/interface.js';
+import { voidResetLinks } from '../passwordReset/repository.js';
 import {
   AdminStatus,
   type AdminLoginInput,
@@ -15,6 +17,7 @@ import {
   type AdminView,
   type CreateAdminInput,
   type CreatedAdmin,
+  type SignedInAdmin,
 } from './interface.js';
 import {
   findAdminByEmail,
@@ -46,7 +49,7 @@ export const requireAdminRow = async (db: Queryable, adminId: string): Promise<A
   return admin;
 };
 
-export const loginAdmin = async (input: AdminLoginInput, requestId: string): Promise<AdminView> => {
+export const loginAdmin = async (input: AdminLoginInput, requestId: string): Promise<SignedInAdmin> => {
   const known = await findAdminByEmail(pool, input.email);
 
   if (!known) throw new AppError(ErrorCode.InvalidCredentials);
@@ -79,7 +82,7 @@ export const loginAdmin = async (input: AdminLoginInput, requestId: string): Pro
       requestId,
     });
 
-    return toAdminView(admin);
+    return { admin: toAdminView(admin), sessionVersion: admin.session_version };
   });
 };
 
@@ -145,7 +148,11 @@ export const resetAdminPassword = (adminId: string, actingAdminId: string, reque
 
     const temporaryPassword = generateTemporaryPassword();
 
-    await updateAdminPasswordHash(connection, adminId, await hashPassword(temporaryPassword));
+    await withTransaction(connection, async () => {
+      await updateAdminPasswordHash(connection, adminId, await hashPassword(temporaryPassword));
+
+      await voidResetLinks(connection, PasswordResetAccountType.Admin, adminId);
+    });
 
     await recordAudit(connection, {
       action: AuditAction.AdminPasswordReset,
@@ -159,14 +166,18 @@ export const resetAdminPassword = (adminId: string, actingAdminId: string, reque
     return { temporaryPassword };
   });
 
-export const changeAdminPassword = (adminId: string, input: ChangePasswordInput, requestId: string): Promise<void> =>
+export const changeAdminPassword = (adminId: string, input: ChangePasswordInput, requestId: string): Promise<number> =>
   withCriticalSection([lockKey.admin(adminId)], async connection => {
     const admin = await requireAdminRow(connection, adminId);
     const matches = await verifyPassword(admin.password_hash, input.currentPassword);
 
     if (!matches) throw new AppError(ErrorCode.CurrentPasswordIncorrect);
 
-    await updateAdminPasswordHash(connection, adminId, await hashPassword(input.newPassword));
+    await withTransaction(connection, async () => {
+      await updateAdminPasswordHash(connection, adminId, await hashPassword(input.newPassword));
+
+      await voidResetLinks(connection, PasswordResetAccountType.Admin, adminId);
+    });
 
     await recordAudit(connection, {
       action: AuditAction.AdminPasswordChanged,
@@ -176,4 +187,6 @@ export const changeAdminPassword = (adminId: string, input: ChangePasswordInput,
       entityId: adminId,
       requestId,
     });
+
+    return (await requireAdminRow(connection, adminId)).session_version;
   });

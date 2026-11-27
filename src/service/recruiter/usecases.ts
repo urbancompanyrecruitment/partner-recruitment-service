@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto';
 import type { ChangePasswordInput, TemporaryPasswordResult } from '../../common/auth/index.js';
 import { assertNotLocked, nextLoginFailure } from '../../common/auth/lockout.js';
 import { generateTemporaryPassword, hashPassword, verifyPassword } from '../../common/crypto/password.js';
-import { pool, type Queryable } from '../../common/db/index.js';
+import { pool, withTransaction, type Queryable } from '../../common/db/index.js';
 import { AppError, ErrorCode } from '../../common/errors/index.js';
 import { lockKey, withCriticalSection } from '../../common/lock/index.js';
 import { logger } from '../../common/logger.js';
 import { toIsoDateTime, toOptionalIsoDateTime } from '../../common/time.js';
 import { ActorType, AuditAction, AuditEntityType, recordAudit } from '../audit/index.js';
+import { PasswordResetAccountType } from '../passwordReset/interface.js';
+import { voidResetLinks } from '../passwordReset/repository.js';
 import { BLOCKED_STATUS_ERROR, RECRUITER_STATUS_TRANSITIONS, REVIEWED_FROM_STATUSES } from './constant.js';
 import {
   RecruiterStatus,
@@ -17,6 +19,7 @@ import {
   type RecruiterRow,
   type RecruiterSignUpInput,
   type RecruiterView,
+  type SignedInRecruiter,
 } from './interface.js';
 import {
   findRecruiterByEmail,
@@ -57,7 +60,7 @@ export const assertNotBlocked = (status: RecruiterStatus): void => {
   if (blocked) throw new AppError(blocked);
 };
 
-export const loginRecruiter = async (input: RecruiterLoginInput, requestId: string): Promise<RecruiterView> => {
+export const loginRecruiter = async (input: RecruiterLoginInput, requestId: string): Promise<SignedInRecruiter> => {
   const known = await findRecruiterByEmail(pool, input.email);
 
   if (!known) throw new AppError(ErrorCode.InvalidCredentials);
@@ -90,7 +93,7 @@ export const loginRecruiter = async (input: RecruiterLoginInput, requestId: stri
       requestId,
     });
 
-    return toRecruiterView(recruiter);
+    return { recruiter: toRecruiterView(recruiter), sessionVersion: recruiter.session_version };
   });
 };
 
@@ -199,14 +202,18 @@ export const setRecruiterStatus = (recruiterId: string, status: RecruiterStatus,
     return toRecruiterView(await requireRecruiterRow(connection, recruiterId));
   });
 
-export const changeRecruiterPassword = (recruiterId: string, input: ChangePasswordInput, requestId: string): Promise<void> =>
+export const changeRecruiterPassword = (recruiterId: string, input: ChangePasswordInput, requestId: string): Promise<number> =>
   withCriticalSection([lockKey.recruiter(recruiterId)], async connection => {
     const recruiter = await requireRecruiterRow(connection, recruiterId);
     const matches = await verifyPassword(recruiter.password_hash, input.currentPassword);
 
     if (!matches) throw new AppError(ErrorCode.CurrentPasswordIncorrect);
 
-    await updateRecruiterPasswordHash(connection, recruiterId, await hashPassword(input.newPassword));
+    await withTransaction(connection, async () => {
+      await updateRecruiterPasswordHash(connection, recruiterId, await hashPassword(input.newPassword));
+
+      await voidResetLinks(connection, PasswordResetAccountType.Recruiter, recruiterId);
+    });
 
     await recordAudit(connection, {
       action: AuditAction.RecruiterPasswordChanged,
@@ -216,6 +223,8 @@ export const changeRecruiterPassword = (recruiterId: string, input: ChangePasswo
       entityId: recruiterId,
       requestId,
     });
+
+    return (await requireRecruiterRow(connection, recruiterId)).session_version;
   });
 
 export const resetRecruiterPassword = (recruiterId: string, adminId: string, requestId: string): Promise<TemporaryPasswordResult> =>
@@ -224,7 +233,11 @@ export const resetRecruiterPassword = (recruiterId: string, adminId: string, req
 
     const temporaryPassword = generateTemporaryPassword();
 
-    await updateRecruiterPasswordHash(connection, recruiterId, await hashPassword(temporaryPassword));
+    await withTransaction(connection, async () => {
+      await updateRecruiterPasswordHash(connection, recruiterId, await hashPassword(temporaryPassword));
+
+      await voidResetLinks(connection, PasswordResetAccountType.Recruiter, recruiterId);
+    });
 
     await recordAudit(connection, {
       action: AuditAction.RecruiterPasswordReset,

@@ -46,7 +46,7 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   [ErrorCode.RecruiterRejected]: HTTP_STATUS.forbidden,
   [ErrorCode.RecruiterNotActive]: HTTP_STATUS.conflict,
   [ErrorCode.AdminSuspended]: HTTP_STATUS.forbidden,
-  [ErrorCode.OpsUploadNotConfigured]: HTTP_STATUS.conflict,
+  [ErrorCode.ResetLinkInvalid]: HTTP_STATUS.badRequest,
   [ErrorCode.RequestRejected]: HTTP_STATUS.badRequest,
   [ErrorCode.InternalError]: HTTP_STATUS.internalError,
 };
@@ -68,10 +68,10 @@ export const ERROR_MESSAGE: Record<ErrorCode, string> = {
   [ErrorCode.InvalidCredentials]: 'Check your sign-in details.',
   [ErrorCode.LoginLocked]: 'Too many failed attempts. Try again later.',
   [ErrorCode.CurrentPasswordIncorrect]: 'The current password is incorrect.',
-  [ErrorCode.NotAvailable]: 'This partner is not available.',
+  [ErrorCode.NotAvailable]: 'This candidate is not available.',
   [ErrorCode.LockUnavailable]: 'The system is busy. Try again.',
-  [ErrorCode.LockExpired]: 'There is no active lock on this partner for you.',
-  [ErrorCode.NotLockOwner]: 'This partner is locked by another recruiter.',
+  [ErrorCode.LockExpired]: 'There is no active lock on this candidate for you.',
+  [ErrorCode.NotLockOwner]: 'This candidate is locked by another recruiter.',
   [ErrorCode.InvalidStartDate]: 'The start date cannot be in the past.',
   [ErrorCode.UnknownAggregator]: 'Choose one of the aggregators added to this recruiter account.',
   [ErrorCode.AggregatorAlreadyExists]: 'This recruiter already has an aggregator with this name.',
@@ -81,8 +81,7 @@ export const ERROR_MESSAGE: Record<ErrorCode, string> = {
   [ErrorCode.RecruiterRejected]: 'This recruiter account request was not approved.',
   [ErrorCode.RecruiterNotActive]: 'This recruiter account is not active.',
   [ErrorCode.AdminSuspended]: 'This admin account is suspended.',
-  [ErrorCode.OpsUploadNotConfigured]:
-    'The Urban Company category key for the ops upload file is not set. Set OPS_LEAD_UPLOAD_CATEGORY_KEY and restart the service.',
+  [ErrorCode.ResetLinkInvalid]: 'This reset link is invalid or has expired. Request a new one.',
   [ErrorCode.RequestRejected]: 'The request was rejected.',
   [ErrorCode.InternalError]: 'Something went wrong.',
 };

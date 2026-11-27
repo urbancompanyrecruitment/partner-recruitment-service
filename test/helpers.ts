@@ -9,6 +9,7 @@ import { CookingFrequency, RecruitmentSource } from '../src/service/partner/inte
 
 const TABLES = [
   'audit_logs',
+  'password_reset_tokens',
   'partner_notifications',
   'verification_import_rows',
   'verification_imports',

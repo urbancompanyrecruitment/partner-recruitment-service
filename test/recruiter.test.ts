@@ -75,7 +75,7 @@ describe('recruiter locks, registrations and placements', () => {
     await closeDatabase();
   });
 
-  it('rejects suspended recruiters at login and on existing sessions', async () => {
+  it('signs suspended recruiters in to see their status but keeps every feature closed', async () => {
     const me = await api(app, { method: 'GET', url: '/api/recruiter/auth/me', cookie: alex.cookie });
     expect(me.json()).toMatchObject({ email: 'alex@brightpath.sg', company: 'BrightPath Recruitment' });
 
@@ -83,9 +83,21 @@ describe('recruiter locks, registrations and placements', () => {
 
     const afterSuspension = await api(app, { method: 'GET', url: '/api/recruiter/partners/available', cookie: alex.cookie });
     expect(afterSuspension.statusCode).toBe(403);
+    expect(afterSuspension.json().error.code).toBe('RECRUITER_SUSPENDED');
 
     const login = await api(app, { method: 'POST', url: '/api/recruiter/auth/login', payload: { email: 'alex@brightpath.sg', password: alex.temporaryPassword } });
-    expect(login.statusCode).toBe(403);
+    expect(login.statusCode).toBe(200);
+    expect(login.json()).toMatchObject({ status: 'suspended', active: false });
+
+    const suspendedCookie = { [COOKIE.recruiter]: cookieOf(login, COOKIE.recruiter) };
+    const meWhileSuspended = await api(app, { method: 'GET', url: '/api/recruiter/auth/me', cookie: suspendedCookie });
+    expect(meWhileSuspended.json()).toMatchObject({ status: 'suspended', active: false });
+
+    const lockWhileSuspended = await api(app, { method: 'GET', url: '/api/recruiter/locks', cookie: suspendedCookie });
+    expect(lockWhileSuspended.json().error.code).toBe('RECRUITER_SUSPENDED');
+
+    const wrongPassword = await api(app, { method: 'POST', url: '/api/recruiter/auth/login', payload: { email: 'alex@brightpath.sg', password: 'wrong-password' } });
+    expect(wrongPassword.statusCode).toBe(401);
 
     const wrong = await api(app, { method: 'POST', url: '/api/recruiter/auth/login', payload: { email: 'jamie@horizon.sg', password: 'wrong' } });
     expect(wrong.statusCode).toBe(401);

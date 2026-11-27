@@ -27,6 +27,7 @@ import {
 
 const TABLES = [
   'audit_logs',
+  'password_reset_tokens',
   'partner_notifications',
   'verification_import_rows',
   'verification_imports',

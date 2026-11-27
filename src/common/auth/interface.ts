@@ -12,6 +12,7 @@ export interface Actor {
   role: ActorRole;
   name: string;
   email?: string;
+  sessionVersion?: number;
 }
 
 export interface SessionClaims {
@@ -19,6 +20,7 @@ export interface SessionClaims {
   role: ActorRole;
   name: string;
   email?: string;
+  ver?: number;
 }
 
 declare module 'fastify' {

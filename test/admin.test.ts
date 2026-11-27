@@ -1,5 +1,4 @@
 import type { App } from '../src/buildApp.js';
-import { config } from '../src/common/config/index.js';
 import { pool, query } from '../src/common/db/index.js';
 import { AdminRole } from '../src/service/admin/index.js';
 import {
@@ -207,23 +206,6 @@ describe('admin', () => {
 
     const anonymous = await api(app, { method: 'GET', url: '/api/admin/partners/ops-lead-upload.csv' });
     expect(anonymous.statusCode).toBe(401);
-  });
-
-  it('refuses the ops lead upload file until the category key is configured', async () => {
-    const configuredCategoryKey = config.opsLeadUpload.categoryKey;
-    config.opsLeadUpload.categoryKey = undefined;
-
-    await signUp(app, { singaporePhone: '+65 9123 4567' });
-
-    const csv = await api(app, { method: 'GET', url: '/api/admin/partners/ops-lead-upload.csv', cookie: admin });
-
-    config.opsLeadUpload.categoryKey = configuredCategoryKey;
-
-    expect(csv.statusCode).toBe(409);
-    expect(csv.json().error.code).toBe('OPS_UPLOAD_NOT_CONFIGURED');
-
-    const audits = await query(pool, "SELECT id FROM audit_logs WHERE action = 'partners.ops_upload_exported'");
-    expect(audits).toHaveLength(0);
   });
 
   it('adds a Singapore number, creates the lead once, and rejects invalid numbers', async () => {
@@ -439,9 +421,9 @@ describe('admin', () => {
     const suspended = await api(app, { method: 'PUT', url: `/api/admin/recruiters/${recruiterId}/status`, cookie: admin, payload: { status: 'suspended' } });
     expect(suspended.json()).toMatchObject({ status: 'suspended', active: false });
 
-    const blocked = await api(app, { method: 'POST', url: '/api/recruiter/auth/login', payload: credentials });
-    expect(blocked.statusCode).toBe(403);
-    expect(blocked.json().error.code).toBe('RECRUITER_SUSPENDED');
+    const signedInWhileSuspended = await api(app, { method: 'POST', url: '/api/recruiter/auth/login', payload: credentials });
+    expect(signedInWhileSuspended.statusCode).toBe(200);
+    expect(signedInWhileSuspended.json()).toMatchObject({ status: 'suspended', active: false });
 
     const list = await api(app, { method: 'GET', url: '/api/admin/recruiters', cookie: admin });
     expect(list.json()[0].status).toBe('suspended');

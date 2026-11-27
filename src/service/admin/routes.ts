@@ -3,6 +3,15 @@ import { ActorRole, changePasswordSchema, clearSession, issueSession } from '../
 import { pool } from '../../common/db/index.js';
 import { HTTP_STATUS } from '../../common/errors/constant.js';
 import { addAggregator, addAggregatorSchema, aggregatorParamsSchema, removeAggregator } from '../aggregator/index.js';
+import {
+  FORGOT_PASSWORD_RATE_LIMIT,
+  forgotPasswordSchema,
+  PasswordResetAccountType,
+  requestPasswordReset,
+  RESET_PASSWORD_RATE_LIMIT,
+  resetPassword,
+  resetPasswordSchema,
+} from '../passwordReset/index.js';
 import { hubImportSchema, importHubs } from '../hub/index.js';
 import { getSlotOccupancy, importSlots, INTERVIEW_CENTRES, slotImportSchema } from '../interview/index.js';
 import { assignPartner, assignRecruiterSchema, listAllLocks } from '../lock/index.js';
@@ -57,11 +66,27 @@ const sendCsv = (reply: FastifyReply, fileName: string, csv: string) =>
 
 export const adminAuthRoutes = async (app: FastifyInstance): Promise<void> => {
   app.post('/admin/auth/login', { config: { rateLimit: ADMIN_LOGIN_RATE_LIMIT } }, async (request, reply) => {
-    const admin = await loginAdmin(adminLoginSchema.parse(request.body), request.id);
+    const { admin, sessionVersion } = await loginAdmin(adminLoginSchema.parse(request.body), request.id);
 
-    await issueSession(reply, { id: admin.id, role: ActorRole.Admin, name: admin.name, email: admin.email });
+    await issueSession(reply, { id: admin.id, role: ActorRole.Admin, name: admin.name, email: admin.email, sessionVersion });
 
     return admin;
+  });
+
+  app.post('/admin/auth/forgot-password', { config: { rateLimit: FORGOT_PASSWORD_RATE_LIMIT } }, async (request, reply) => {
+    await requestPasswordReset(PasswordResetAccountType.Admin, forgotPasswordSchema.parse(request.body).email, request.id);
+
+    return reply.code(HTTP_STATUS.noContent).send();
+  });
+
+  app.post('/admin/auth/reset-password', { config: { rateLimit: RESET_PASSWORD_RATE_LIMIT } }, async (request, reply) => {
+    const { token, password } = resetPasswordSchema.parse(request.body);
+
+    await resetPassword(PasswordResetAccountType.Admin, token, password, request.id);
+
+    clearSession(reply, ActorRole.Admin);
+
+    return reply.code(HTTP_STATUS.noContent).send();
   });
 
   app.post('/admin/auth/logout', async (_request, reply) => {
@@ -108,7 +133,9 @@ export const adminRoutes = async (app: FastifyInstance): Promise<void> => {
   });
 
   app.post('/admin/change-password', async (request, reply) => {
-    await changeAdminPassword(request.actor.id, changePasswordSchema.parse(request.body), request.id);
+    const sessionVersion = await changeAdminPassword(request.actor.id, changePasswordSchema.parse(request.body), request.id);
+
+    await issueSession(reply, { ...request.actor, sessionVersion });
 
     return reply.code(HTTP_STATUS.noContent).send();
   });

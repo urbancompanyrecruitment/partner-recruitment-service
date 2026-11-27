@@ -75,7 +75,7 @@ describe('sign-up sheet', () => {
 
     const row = Object.fromEntries(received[0].headers.map((header, index) => [header, received[0].values[index]]));
     expect(row).toMatchObject({
-      'Partner ID': created.json().partner.id,
+      'Candidate ID': created.json().partner.id,
       Name: 'Test Partner',
       'Primary mobile': '+9598760000',
       'Singapore mobile': '+6591234567',

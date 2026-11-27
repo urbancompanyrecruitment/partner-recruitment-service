@@ -27,6 +27,7 @@ export interface RecruiterRow {
   reviewed_by_admin_id: string | null;
   reviewed_at: string | null;
   last_login_at: string | null;
+  session_version: number;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +53,11 @@ export interface NewRecruiter {
   passwordHash: string;
   status: RecruiterStatus;
   createdByAdminId?: string;
+}
+
+export interface SignedInRecruiter {
+  recruiter: RecruiterView;
+  sessionVersion: number;
 }
 
 export interface CreatedRecruiter {

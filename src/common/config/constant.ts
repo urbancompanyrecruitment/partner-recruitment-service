@@ -12,11 +12,21 @@ export const DEFAULT_LOCK_TTL_HOURS = 72;
 
 export const DEFAULT_DATABASE_POOL_MAX = 10;
 
+export const DEFAULT_SMTP_PORT = 587;
+
+export const DEFAULT_FORGOT_PASSWORD_RESPONSE_MS = 5000;
+
 export const ESCAPED_NEWLINE = '\\n';
 
 export const NEWLINE = '\n';
 
+export const TRAILING_SLASHES = /\/+$/;
+
+export const HTTPS_PREFIX = 'https://';
+
 export const DEFAULT_OPS_LEAD_UPLOAD_CITY_KEY = 'city_singapore_v2';
+
+export const DEFAULT_OPS_LEAD_UPLOAD_CATEGORY_KEY = 'part_time_maids';
 
 export const DEFAULT_OPS_LEAD_UPLOAD_SOURCE_TYPE = 'third_party';
 

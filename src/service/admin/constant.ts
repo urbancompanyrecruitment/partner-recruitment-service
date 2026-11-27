@@ -1,6 +1,6 @@
 export const EXPORT_CSV_HEADERS = ['name', 'location', 'primary_mobile'];
 
-export const EXPORT_FILE_NAME = 'signed-up-partners.csv';
+export const EXPORT_FILE_NAME = 'signed-up-candidates.csv';
 
 export const OPS_UPLOAD_CSV_HEADERS = ['name', 'phone', 'city_key', 'category_key', 'source_type', 'experiment_name'];
 

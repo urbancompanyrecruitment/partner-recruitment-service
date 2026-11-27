@@ -8,7 +8,7 @@ import { ActorRole, type Actor, type SessionClaims } from './interface.js';
 const secret = new TextEncoder().encode(config.sessionSecret);
 
 export const issueSession = async (reply: FastifyReply, actor: Actor): Promise<void> => {
-  const claims: SessionClaims = { sub: actor.id, role: actor.role, name: actor.name, email: actor.email };
+  const claims: SessionClaims = { sub: actor.id, role: actor.role, name: actor.name, email: actor.email, ver: actor.sessionVersion ?? 0 };
   const token = await new SignJWT({ ...claims })
     .setProtectedHeader({ alg: JWT_ALGORITHM })
     .setIssuedAt()
@@ -37,7 +37,7 @@ export const readSession = async (request: FastifyRequest, role: ActorRole): Pro
 
   if (!verified || verified.payload.role !== role || !verified.payload.sub) return undefined;
 
-  return { id: verified.payload.sub, role, name: verified.payload.name, email: verified.payload.email };
+  return { id: verified.payload.sub, role, name: verified.payload.name, email: verified.payload.email, sessionVersion: verified.payload.ver ?? 0 };
 };
 
 export const requireSession = async (request: FastifyRequest, role: ActorRole): Promise<Actor> => {
@@ -47,6 +47,9 @@ export const requireSession = async (request: FastifyRequest, role: ActorRole): 
 
   return actor;
 };
+
+// The account's session version goes up with every password change; a cookie signed with an older version is refused.
+export const isSessionRevoked = (actor: Actor, currentSessionVersion: number): boolean => (actor.sessionVersion ?? 0) !== currentSessionVersion;
 
 export { ActorRole } from './interface.js';
 export type { Actor, ChangePasswordInput, TemporaryPasswordResult } from './interface.js';

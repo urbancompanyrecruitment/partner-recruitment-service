@@ -69,8 +69,6 @@ export const exportPartners = async (filters: PartnerListFilters, adminId: strin
 export const exportPartnersForOps = async (filters: PartnerListFilters, adminId: string, requestId: string): Promise<string> => {
   const { cityKey, categoryKey, sourceType, experimentName } = config.opsLeadUpload;
 
-  if (!categoryKey) throw new AppError(ErrorCode.OpsUploadNotConfigured);
-
   const partners = (await listAdminPartners(filters))
     .filter(partner => partner.state !== PartnerState.VerificationFailed)
     .map(partner => ({ name: partner.name, singaporePhone: partner.singaporePhone ?? '' }))

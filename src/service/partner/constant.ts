@@ -14,7 +14,7 @@ export const NAME_SEPARATOR = ' ';
 
 export const COUNTRY_MAX_LENGTH = 64;
 
-export const CONSENT_VERSION = '2026-11';
+export const CONSENT_VERSION = '2026-11-26';
 
 export const SOURCES_REQUIRING_REFERRER: RecruitmentSource[] = [
   RecruitmentSource.Recruiter,
@@ -55,7 +55,7 @@ export const SHEET_TIME_ZONE = 'Asia/Singapore';
 
 export const SHEET_HEADERS = [
   'Registered at (SGT)',
-  'Partner ID',
+  'Candidate ID',
   'Name',
   'Primary mobile',
   'Singapore mobile',

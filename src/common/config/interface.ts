@@ -6,7 +6,7 @@ export enum NodeEnvironment {
 
 export interface OpsLeadUploadConfig {
   cityKey: string;
-  categoryKey?: string;
+  categoryKey: string;
   sourceType: string;
   experimentName: string;
 }
@@ -14,6 +14,16 @@ export interface OpsLeadUploadConfig {
 export interface SignupSheetConfig {
   webhookUrl?: string;
   secret?: string;
+}
+
+export interface MailConfig {
+  host?: string;
+  port: number;
+  secure: boolean;
+  requireTls: boolean;
+  user?: string;
+  password?: string;
+  from?: string;
 }
 
 export interface Config {
@@ -31,4 +41,7 @@ export interface Config {
   signupSheet: SignupSheetConfig;
   opsLeadUpload: OpsLeadUploadConfig;
   lockTtlHours: number;
+  portalBaseUrl?: string;
+  mail: MailConfig;
+  forgotPasswordResponseMs: number;
 }

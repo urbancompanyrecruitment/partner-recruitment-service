@@ -19,6 +19,10 @@ export const RECRUITER_STATUS_TRANSITIONS: Record<RecruiterStatus, RecruiterStat
 export const REVIEWED_FROM_STATUSES: RecruiterStatus[] = [RecruiterStatus.Pending, RecruiterStatus.Rejected];
 
 export const BLOCKED_STATUS_ERROR: Partial<Record<RecruiterStatus, ErrorCode>> = {
-  [RecruiterStatus.Suspended]: ErrorCode.RecruiterSuspended,
   [RecruiterStatus.Rejected]: ErrorCode.RecruiterRejected,
+};
+
+export const INACTIVE_STATUS_ERROR: Partial<Record<RecruiterStatus, ErrorCode>> = {
+  [RecruiterStatus.Pending]: ErrorCode.RecruiterPendingApproval,
+  [RecruiterStatus.Suspended]: ErrorCode.RecruiterSuspended,
 };

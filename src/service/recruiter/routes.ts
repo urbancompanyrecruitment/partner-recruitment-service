@@ -2,6 +2,15 @@ import type { FastifyInstance } from 'fastify';
 import { ActorRole, changePasswordSchema, clearSession, issueSession } from '../../common/auth/index.js';
 import { pool } from '../../common/db/index.js';
 import { HTTP_STATUS } from '../../common/errors/constant.js';
+import {
+  FORGOT_PASSWORD_RATE_LIMIT,
+  forgotPasswordSchema,
+  PasswordResetAccountType,
+  requestPasswordReset,
+  RESET_PASSWORD_RATE_LIMIT,
+  resetPassword,
+  resetPasswordSchema,
+} from '../passwordReset/index.js';
 import { RECRUITER_LOGIN_RATE_LIMIT, RECRUITER_SIGN_UP_RATE_LIMIT } from './constant.js';
 import { requireRecruiterAccount } from './guard.js';
 import { recruiterLoginSchema, recruiterSignUpSchema } from './schema.js';
@@ -17,11 +26,27 @@ export const recruiterRoutes = async (app: FastifyInstance): Promise<void> => {
   });
 
   app.post('/recruiter/auth/login', { config: { rateLimit: RECRUITER_LOGIN_RATE_LIMIT } }, async (request, reply) => {
-    const recruiter = await loginRecruiter(recruiterLoginSchema.parse(request.body), request.id);
+    const { recruiter, sessionVersion } = await loginRecruiter(recruiterLoginSchema.parse(request.body), request.id);
 
-    await issueSession(reply, { id: recruiter.id, role: ActorRole.Recruiter, name: recruiter.name, email: recruiter.email });
+    await issueSession(reply, { id: recruiter.id, role: ActorRole.Recruiter, name: recruiter.name, email: recruiter.email, sessionVersion });
 
     return recruiter;
+  });
+
+  app.post('/recruiter/auth/forgot-password', { config: { rateLimit: FORGOT_PASSWORD_RATE_LIMIT } }, async (request, reply) => {
+    await requestPasswordReset(PasswordResetAccountType.Recruiter, forgotPasswordSchema.parse(request.body).email, request.id);
+
+    return reply.code(HTTP_STATUS.noContent).send();
+  });
+
+  app.post('/recruiter/auth/reset-password', { config: { rateLimit: RESET_PASSWORD_RATE_LIMIT } }, async (request, reply) => {
+    const { token, password } = resetPasswordSchema.parse(request.body);
+
+    await resetPassword(PasswordResetAccountType.Recruiter, token, password, request.id);
+
+    clearSession(reply, ActorRole.Recruiter);
+
+    return reply.code(HTTP_STATUS.noContent).send();
   });
 
   app.post('/recruiter/auth/logout', async (_request, reply) => {
@@ -39,7 +64,9 @@ export const recruiterRoutes = async (app: FastifyInstance): Promise<void> => {
   app.post('/recruiter/change-password', async (request, reply) => {
     await requireRecruiterAccount(request, reply);
 
-    await changeRecruiterPassword(request.actor.id, changePasswordSchema.parse(request.body), request.id);
+    const sessionVersion = await changeRecruiterPassword(request.actor.id, changePasswordSchema.parse(request.body), request.id);
+
+    await issueSession(reply, { ...request.actor, sessionVersion });
 
     return reply.code(HTTP_STATUS.noContent).send();
   });
